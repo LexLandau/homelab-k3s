@@ -1,0 +1,13 @@
+apiVersion: longhorn.io/v1beta1
+kind: RecurringJob
+metadata:
+  name: daily-snapshot-all
+  namespace: longhorn-system
+spec:
+  name: daily-snapshot-all
+  groups:
+  - default
+  task: snapshot
+  cron: "0 2 * * *"
+  retain: 7
+  concurrency: 2

@@ -1,0 +1,102 @@
+---
+- name: Read K3s token from file
+  set_fact:
+    k3s_cluster_token: "{{ lookup('file', k3s_token_file) | trim }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Check if K3s is installed
+  stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Download K3s installer
+  get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: '0755'
+  when: not k3s_binary.stat.exists
+
+- name: Install K3s on first control plane node
+  shell: |
+    INSTALL_K3S_VERSION={{ k3s_version }} \
+    K3S_TOKEN={{ k3s_cluster_token }} \
+    /tmp/k3s-install.sh server \
+    --cluster-init \
+    {{ k3s_server_options | join(' ') }}
+  args:
+    creates: /etc/systemd/system/k3s.service
+  when: 
+    - not k3s_binary.stat.exists
+    - inventory_hostname == groups['controlplane'][0]
+  register: k3s_first_install
+
+- name: Wait for K3s first node API to be ready
+  wait_for:
+    port: 6443
+    delay: 15
+    timeout: 180
+  when: inventory_hostname == groups['controlplane'][0]
+
+- name: Wait additional time for etcd to stabilize
+  pause:
+    seconds: 30
+  when: 
+    - inventory_hostname == groups['controlplane'][0]
+    - k3s_first_install.changed
+
+- name: Install K3s on additional control plane nodes
+  shell: |
+    INSTALL_K3S_VERSION={{ k3s_version }} \
+    K3S_TOKEN={{ k3s_cluster_token }} \
+    /tmp/k3s-install.sh server \
+    --server https://{{ hostvars[groups['controlplane'][0]]['ansible_host'] }}:6443 \
+    {{ k3s_server_options | join(' ') }}
+  args:
+    creates: /etc/systemd/system/k3s.service
+  when: 
+    - not k3s_binary.stat.exists
+    - inventory_hostname != groups['controlplane'][0]
+
+- name: Wait for K3s service to be active
+  systemd:
+    name: k3s
+    state: started
+    enabled: yes
+
+- name: Wait for node to be ready
+  shell: kubectl get nodes {{ node_name }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+  register: node_ready
+  until: node_ready.stdout == "True"
+  retries: 30
+  delay: 10
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Create .kube directory for alex user
+  file:
+    path: /home/alex/.kube
+    state: directory
+    owner: alex
+    group: alex
+    mode: '0755'
+
+- name: Copy kubeconfig for alex user
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: /home/alex/.kube/config
+    remote_src: yes
+    owner: alex
+    group: alex
+    mode: '0600'
+
+- name: Update kubeconfig server address for alex user
+  replace:
+    path: /home/alex/.kube/config
+    regexp: 'https://127\.0\.0\.1:6443'
+    replace: "https://{{ hostvars[groups['controlplane'][0]]['ansible_host'] }}:6443"
+
+- name: Include post-installation tasks
+  include_tasks: post-install.yml
+  when: inventory_hostname == groups['controlplane'][0]
+  run_once: true
