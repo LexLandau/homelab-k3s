@@ -1,0 +1,29 @@
+# Secrets - NIEMALS committen!
+*.credentials.json
+*-credentials.json
+credentials.json
+secrets/
+.env
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+homelab_ed25519*
+
+# Ansible
+*.retry
+.vault_pass
+
+# Kubeconfig
+kubeconfig*
+*.kubeconfig
+.kube/
+
+# Temporäre Dateien
+*.tmp
+*.log
+.DS_Store
+
+# WSL2 spezifisch
+*.swp
+*~
