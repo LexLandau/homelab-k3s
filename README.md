@@ -83,3 +83,18 @@ Secrets werden in 1Password gespeichert:
 - K3s Cluster Token
 
 **Niemals Secrets in Git committen!**
+
+## 📡 Network Migration Notes
+
+**Cluster migrated from WLAN to Ethernet (Dec 1, 2025)**
+
+All Pis now connected via Ethernet in Keller:
+- Ethernet cables connected
+- WLAN disabled on all Pis
+- K3s flannel interface changed to eth0
+- All services running stable on wired network
+
+Performance improvements:
+- Lower latency
+- More stable connections
+- Better throughput for storage (Longhorn)
