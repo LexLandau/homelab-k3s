@@ -1,0 +1,23 @@
+---
+- name: Get list of existing nodes
+  shell: kubectl get nodes -o jsonpath='{.items[*].metadata.name}'
+  register: existing_nodes
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Label nodes with roles (only existing nodes)
+  command: kubectl label nodes {{ hostvars[item]['node_name'] }} node-role={{ hostvars[item]['node_role'] }} --overwrite
+  loop: "{{ groups['controlplane'] }}"
+  when: hostvars[item]['node_name'] in existing_nodes.stdout
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Verify all nodes are ready
+  shell: kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}'
+  register: all_nodes_status
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Display cluster status
+  debug:
+    msg: "{{ all_nodes_status.stdout_lines }}"
