@@ -1,0 +1,22 @@
+---
+- name: K3s Homelab Complete Setup - All Nodes as CP+Worker
+  hosts: k3s_cluster
+  become: yes
+  serial: 1  # Ein Node nach dem anderen für stabilere Installation
+  
+  pre_tasks:
+    - name: Test connectivity
+      ping:
+      
+    - name: Display node information
+      debug:
+        msg: "Installing on {{ inventory_hostname }} ({{ ansible_host }}) - Role: {{ node_role }}"
+      
+  roles:
+    - system-prep
+    - k3s-server
+    
+  post_tasks:
+    - name: Display completion message
+      debug:
+        msg: "K3s installation completed on {{ inventory_hostname }}"

@@ -1,0 +1,26 @@
+---
+# K3s Cluster Configuration
+# Token wird aus Datei gelesen
+k3s_token_file: "{{ playbook_dir }}/../.k3s-token"
+
+# K3s Server Options - OHNE node-taint!
+# Alle Nodes sind CP + Worker!
+k3s_server_options:
+  - "--disable=traefik"
+  - "--disable=servicelb"
+  - "--write-kubeconfig-mode=644"
+  - "--cluster-init"
+  - "--tls-san={{ ansible_host }}"
+  - "--node-ip={{ ansible_host }}"
+  - "--flannel-iface=wlan0"
+
+# 1Password Integration
+onepassword_credentials_file: "{{ lookup('env', 'HOME') }}/homelab-secrets/1password-credentials.json"
+onepassword_vault: "Homelab-K3s"
+
+# Backup Configuration
+backup_schedule: "0 3 * * *"
+backup_retention_days: 14
+
+# NFS Configuration für Fritz!Box
+fritzbox_ip: "192.168.1.1"

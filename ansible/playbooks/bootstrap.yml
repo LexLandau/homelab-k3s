@@ -1,0 +1,190 @@
+---
+- name: Bootstrap Kubernetes Infrastructure
+  hosts: localhost
+  gather_facts: no
+  become: no  # KEIN sudo auf localhost!
+  
+  vars:
+    kubeconfig_path: "{{ lookup('env', 'HOME') }}/.kube/config-homelab"
+    first_node: "{{ groups['controlplane'][0] }}"
+    first_node_ip: "{{ hostvars[groups['controlplane'][0]]['ansible_host'] }}"
+    
+  tasks:
+    - name: Ensure .kube directory exists
+      file:
+        path: "{{ lookup('env', 'HOME') }}/.kube"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      become: no
+    
+    - name: Fetch kubeconfig from first control plane
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ kubeconfig_path }}"
+        flat: yes
+      delegate_to: "{{ first_node }}"
+      become: yes
+      
+    - name: Update kubeconfig server address
+      replace:
+        path: "{{ kubeconfig_path }}"
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: "https://{{ first_node_ip }}:6443"
+      delegate_to: localhost
+      become: no
+        
+    - name: Set file permissions on kubeconfig
+      file:
+        path: "{{ kubeconfig_path }}"
+        mode: '0600'
+      delegate_to: localhost
+      become: no
+        
+    - name: Wait for all nodes to be ready
+      command: kubectl get nodes
+      register: nodes_status
+      until: nodes_status.stdout.find("NotReady") == -1
+      retries: 30
+      delay: 10
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+        
+    - name: Display cluster nodes
+      command: kubectl get nodes -o wide
+      register: cluster_nodes
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+        
+    - name: Show cluster status
+      debug:
+        msg: "{{ cluster_nodes.stdout_lines }}"
+        
+    - name: Create infrastructure namespaces
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ item }}"
+        kubeconfig: "{{ kubeconfig_path }}"
+      loop:
+        - argocd
+        - metallb-system
+        - longhorn-system
+        - onepassword
+        - monitoring
+        - cert-manager
+      delegate_to: localhost
+      become: no
+        
+    - name: Install MetalLB
+      shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+        
+    - name: Wait for MetalLB controller
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: metallb-system
+        name: controller
+        wait: yes
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+        kubeconfig: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+        
+    - name: Configure MetalLB IP pool
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: default-pool
+            namespace: metallb-system
+          spec:
+            addresses:
+            - "{{ metallb_ip_range }}"
+        kubeconfig: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+        
+    - name: Configure MetalLB L2 Advertisement
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: default
+            namespace: metallb-system
+          spec:
+            ipAddressPools:
+            - default-pool
+        kubeconfig: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+        
+    - name: Install Longhorn
+      shell: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/{{ longhorn_version }}/deploy/longhorn.yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+      
+    - name: Wait for Longhorn to be ready
+      pause:
+        seconds: 60
+        
+    - name: Set Longhorn as default StorageClass
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: longhorn
+            annotations:
+              storageclass.kubernetes.io/is-default-class: "true"
+          provisioner: driver.longhorn.io
+          allowVolumeExpansion: true
+          reclaimPolicy: Delete
+          volumeBindingMode: Immediate
+          parameters:
+            numberOfReplicas: "2"
+            staleReplicaTimeout: "2880"
+            fromBackup: ""
+            fsType: "ext4"
+        kubeconfig: "{{ kubeconfig_path }}"
+      delegate_to: localhost
+      become: no
+        
+    - name: Display bootstrap completion
+      debug:
+        msg:
+          - "=========================================="
+          - "K3s Cluster Bootstrap Complete!"
+          - "=========================================="
+          - ""
+          - "Kubeconfig: {{ kubeconfig_path }}"
+          - "Export: export KUBECONFIG={{ kubeconfig_path }}"
+          - ""
+          - "Next steps:"
+          - "1. Deploy 1Password Connect"
+          - "2. Install ArgoCD"
+          - "3. Deploy applications via GitOps"
+          - ""
+          - "Quick commands:"
+          - "  kubectl get nodes -o wide"
+          - "  kubectl get pods -A"
