@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  namespace: jellyfin
+  labels:
+    app: jellyfin
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jellyfin
+  template:
+    metadata:
+      labels:
+        app: jellyfin
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: rpi5
+      containers:
+      - name: jellyfin
+        image: jellyfin/jellyfin:latest
+        ports:
+        - containerPort: 8096
+          name: http
+        - containerPort: 8920
+          name: https
+        env:
+        - name: TZ
+          value: "Europe/Berlin"
+        - name: JELLYFIN_PublishedServerUrl
+          value: "http://192.168.1.224:8096"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: cache
+          mountPath: /cache
+        - name: movies-backup
+          mountPath: /media/movies-backup
+          readOnly: true
+        - name: movies-nas
+          mountPath: /media/movies-nas
+          readOnly: true
+        - name: series-backup
+          mountPath: /media/series-backup
+          readOnly: true
+        - name: series-nas
+          mountPath: /media/series-nas
+          readOnly: true
+        - name: music
+          mountPath: /media/music
+          readOnly: true
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8096
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8096
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: jellyfin-config
+      - name: cache
+        persistentVolumeClaim:
+          claimName: jellyfin-cache
+      - name: movies-backup
+        hostPath:
+          path: /mnt/media/movies/filme
+          type: Directory
+      - name: movies-nas
+        hostPath:
+          path: /mnt/media/series/Filme
+          type: Directory
+      - name: series-backup
+        hostPath:
+          path: /mnt/media/movies/serien
+          type: Directory
+      - name: series-nas
+        hostPath:
+          path: /mnt/media/series/Serien
+          type: Directory
+      - name: music
+        hostPath:
+          path: /mnt/media/movies/Musik
+          type: Directory
