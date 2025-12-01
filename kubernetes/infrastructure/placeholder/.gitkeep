@@ -1,0 +1,4 @@
+# Infrastructure apps will be added here
+# - 1Password Connect
+# - Traefik Ingress
+# - Cert-Manager
