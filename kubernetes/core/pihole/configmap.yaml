@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-config
+  namespace: pihole
+data:
+  TZ: "Europe/Berlin"
+  DNSMASQ_LISTENING: "all"
+  PIHOLE_DNS_: "1.1.1.1;8.8.8.8"
+  WEBPASSWORD: "CHANGE_ME_IN_SECRET"  # Wird durch Secret überschrieben
