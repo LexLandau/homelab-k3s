@@ -5,6 +5,6 @@ metadata:
   namespace: pihole
 data:
   TZ: "Europe/Berlin"
+  PIHOLE_DNS_: "192.168.1.1;8.8.8.8"
   DNSMASQ_LISTENING: "all"
-  PIHOLE_DNS_: "1.1.1.1;8.8.8.8"
-  WEBPASSWORD: "CHANGE_ME_IN_SECRET"  # Wird durch Secret überschrieben
+  WEBPASSWORD: "DEIN_PASSWORT_HIER"  # Später durch Secret ersetzen!
