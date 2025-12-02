@@ -3,14 +3,19 @@
   "dependencyDashboardTitle": "📦 Dependency Updates Dashboard",
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "kubernetes": {
-    "fileMatch": ["\\.yaml$"]
+    "managerFilePatterns": [
+      "/\\.yaml$/"
+    ]
   },
-  "regexManagers": [
+  "customManagers": [
     {
-      "fileMatch": ["\\.yaml$"],
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/\\.yaml$/"
+      ],
       "matchStrings": [
         "image: (?<depName>.*?):(?<currentValue>.*?)\\s"
       ],
@@ -19,7 +24,11 @@
   ],
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "automerge": false,
-  "schedule": ["every weekend"]
+  "schedule": [
+    "every weekend"
+  ]
 }
