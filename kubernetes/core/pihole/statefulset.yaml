@@ -27,7 +27,7 @@ spec:
                 - network-services
       containers:
       - name: pihole
-        image: pihole/pihole:2024.07.0
+        image: pihole/pihole:2025.11.1
         ports:
         - containerPort: 53
           name: dns-tcp
