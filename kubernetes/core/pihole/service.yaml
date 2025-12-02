@@ -6,7 +6,7 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.1.221
-  externalTrafficPolicy: Local  # ← KRITISCH!
+  externalTrafficPolicy: Local
   selector:
     app: pihole
   ports:
@@ -22,8 +22,8 @@ metadata:
   namespace: pihole
 spec:
   type: LoadBalancer
-  loadBalancerIP: 192.168.1.221
-  externalTrafficPolicy: Local  # ← KRITISCH!
+  loadBalancerIP: 192.168.1.225  # ANDERE IP!
+  externalTrafficPolicy: Local
   selector:
     app: pihole
   ports:
@@ -40,7 +40,7 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.1.220
-  externalTrafficPolicy: Local  # ← KRITISCH!
+  externalTrafficPolicy: Local
   selector:
     app: pihole
   ports:
