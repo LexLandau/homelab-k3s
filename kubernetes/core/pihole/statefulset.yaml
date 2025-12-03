@@ -39,6 +39,8 @@ spec:
           name: http
           protocol: TCP
         env:
+        - name: FTLCONF_webserver_session_timeout
+          value: "8604800"
         - name: TZ
           value: "Europe/Berlin"
         - name: PIHOLE_DNS_
