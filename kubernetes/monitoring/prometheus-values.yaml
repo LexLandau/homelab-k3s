@@ -1,0 +1,62 @@
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: node-role
+              operator: In
+              values:
+              - high-memory
+    resources:
+      requests:
+        memory: 512Mi
+      limits:
+        memory: 1.5Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  enabled: true
+  adminPassword: "DEIN_PASSWORT_HIER"
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    size: 5Gi
+  service:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.1.228
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+          - key: node-role
+            operator: In
+            values:
+            - high-memory
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          resources:
+            requests:
+              storage: 5Gi
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
