@@ -41,7 +41,7 @@ spec:
         - name: TZ
           value: "Europe/Berlin"
         - name: PIHOLE_DNS_
-          value: "1.1.1.1;9.9.9.9;192.168.1.1"  # ← Schnelle DNS-Server
+          value: "1.1.1.1;9.9.9.9;192.168.1.1"
         - name: DNSMASQ_LISTENING
           value: "all"
         - name: WEBPASSWORD
@@ -54,15 +54,15 @@ spec:
           mountPath: /etc/pihole
         - name: dnsmasq
           mountPath: /etc/dnsmasq.d
-        - name: dns-optimization
-          mountPath: /etc/dnsmasq.d/99-gaming-optimization.conf
-          subPath: 99-gaming-optimization.conf
+        - name: toml-config
+          mountPath: /etc/pihole/pihole.toml
+          subPath: pihole.toml
         resources:
           requests:
-            memory: "256Mi"
+            memory: "512Mi"
             cpu: "200m"
           limits:
-            memory: "512Mi"
+            memory: "1Gi"
             cpu: "500m"
         livenessProbe:
           tcpSocket:
@@ -75,9 +75,9 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 5
       volumes:
-      - name: dns-optimization
+      - name: toml-config
         configMap:
-          name: pihole-dns-optimization
+          name: pihole-toml-config
   volumeClaimTemplates:
   - metadata:
       name: config

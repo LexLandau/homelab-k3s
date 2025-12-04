@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-toml-config
+  namespace: pihole
+data:
+  pihole.toml: |
+    [dns]
+    cache.size = 100000
+    cache.optimizer = 3600
+    
+    [webserver]
+    port = 80
+    
+    [database]
+    maxDBdays = 365
