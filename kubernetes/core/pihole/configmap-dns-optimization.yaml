@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-dns-optimization
+  namespace: pihole
+data:
+  99-gaming-optimization.conf: |
+    # DNS Cache auf Maximum
+    cache-size=10000
+    
+    # Cache-TTL optimieren
+    max-cache-ttl=86400
+    min-cache-ttl=3600
+    
+    # Negative Caching reduzieren (schnellere Fehler)
+    max-ttl=86400
+    
+    # Forward-Maximum erhöhen
+    dns-forward-max=1000
+    
+    # Query alle Upstream-Server parallel (schneller!)
+    all-servers
+    
+    # DNSSEC aktivieren (Sicherheit ohne Latenz-Verlust)
+    dnssec
+    proxy-dnssec
+    
+    # Logging reduzieren für Performance
+    log-async

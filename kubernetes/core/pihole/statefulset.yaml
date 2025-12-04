@@ -5,7 +5,7 @@ metadata:
   namespace: pihole
 spec:
   serviceName: pihole
-  replicas: 1  # Später auf 2-3 erhöhen für HA
+  replicas: 1
   selector:
     matchLabels:
       app: pihole
@@ -14,7 +14,6 @@ spec:
       labels:
         app: pihole
     spec:
-      # Node Affinity: Bevorzuge rpi4 (network-services)
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -39,12 +38,10 @@ spec:
           name: http
           protocol: TCP
         env:
-        - name: FTLCONF_webserver_session_timeout
-          value: "8604800"
         - name: TZ
           value: "Europe/Berlin"
         - name: PIHOLE_DNS_
-          value: "192.168.1.1;8.8.8.8"
+          value: "1.1.1.1;9.9.9.9;192.168.1.1"  # ← Schnelle DNS-Server
         - name: DNSMASQ_LISTENING
           value: "all"
         - name: WEBPASSWORD
@@ -57,6 +54,9 @@ spec:
           mountPath: /etc/pihole
         - name: dnsmasq
           mountPath: /etc/dnsmasq.d
+        - name: dns-optimization
+          mountPath: /etc/dnsmasq.d/99-gaming-optimization.conf
+          subPath: 99-gaming-optimization.conf
         resources:
           requests:
             memory: "256Mi"
@@ -74,6 +74,10 @@ spec:
             port: 53
           initialDelaySeconds: 10
           periodSeconds: 5
+      volumes:
+      - name: dns-optimization
+        configMap:
+          name: pihole-dns-optimization
   volumeClaimTemplates:
   - metadata:
       name: config
