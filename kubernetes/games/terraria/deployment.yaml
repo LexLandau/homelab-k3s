@@ -19,35 +19,36 @@ spec:
     spec:
       containers:
       - name: terraria
-        image: beardedio/terraria:latest
+        # Multi-Arch Image (AMD64 + ARM64)
+        image: hexlo/terraria-server-docker:latest
         ports:
         - containerPort: 7777
           name: game
           protocol: TCP
         env:
-        - name: WORLD
-          value: "Worlds/world.wld"
-        # Auto-create: 1=small, 2=medium, 3=large
-        - name: AUTOCREATE
+        - name: world
+          value: "/root/.local/share/Terraria/Worlds/world.wld"
+        - name: autocreate
           value: "3"
-        - name: WORLDNAME
+        - name: worldname
           value: "K3s-World"
-        # Difficulty: 0=Normal, 1=Expert, 2=Master, 3=Journey
-        - name: DIFFICULTY
+        - name: difficulty
           value: "0"
-        - name: MAXPLAYERS
+        - name: maxplayers
           value: "8"
-        - name: PASSWORD
+        - name: password
           value: ""
-        - name: MOTD
-          value: "Welcome to K3s Terraria Server!"
-        - name: SECURE
-          value: "1"
-        - name: LANGUAGE
-          value: "en-US"
+        - name: motd
+          value: "Welcome to K3s Terraria!"
+        - name: port
+          value: "7777"
+        - name: seed
+          value: ""
+        - name: worldpath
+          value: "/root/.local/share/Terraria/Worlds"
         volumeMounts:
         - name: terraria-data
-          mountPath: /config
+          mountPath: /root/.local/share/Terraria/Worlds
         resources:
           requests:
             memory: "512Mi"
