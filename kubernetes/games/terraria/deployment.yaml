@@ -19,29 +19,25 @@ spec:
     spec:
       containers:
       - name: terraria
-        # TShock - funktioniert auf ARM64!
-        image: ghcr.io/tshock/tshock:latest
+        image: ryshe/terraria:latest
         ports:
         - containerPort: 7777
           name: game
           protocol: TCP
-        - containerPort: 7878
-          name: rest
-          protocol: TCP
+        # WICHTIG: Command überschreiben um -autocreate zu erzwingen!
+        command:
+        - "/bin/sh"
+        - "-c"
         args:
-          - "-world"
-          - "/tshock/world/world.wld"
-          - "-autocreate"
-          - "3"
-          - "-worldname"
-          - "K3s-World"
-          - "-difficulty"
-          - "0"
-          - "-maxplayers"
-          - "8"
+        - |
+          /tshock/TerrariaServer.bin.x86_64 \
+            -config /root/.local/share/Terraria/serverconfig.txt \
+            -world /root/.local/share/Terraria/Worlds/world.wld \
+            -autocreate 3 \
+            -worldname "K3s-World"
         volumeMounts:
         - name: terraria-data
-          mountPath: /tshock/world
+          mountPath: /root/.local/share/Terraria/Worlds
         resources:
           requests:
             memory: "512Mi"
