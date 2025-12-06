@@ -17,38 +17,52 @@ spec:
       labels:
         app: terraria
     spec:
+      initContainers:
+      # InitContainer: Erstellt Welt wenn nicht vorhanden
+      - name: world-creator
+        image: rfvgyhn/terraria:latest
+        command:
+        - sh
+        - -c
+        - |
+          if [ ! -f "/config/Worlds/world.wld" ]; then
+            echo "Creating new world..."
+            mkdir -p /config/Worlds
+            # World mit -autocreate erstellen
+            timeout 300 /opt/terraria/start-terraria-server.sh \
+              -world /config/Worlds/world.wld \
+              -autocreate 3 \
+              -worldname "K3s-World" || true
+            echo "World created!"
+          else
+            echo "World already exists!"
+          fi
+        volumeMounts:
+        - name: terraria-data
+          mountPath: /config/Worlds
       containers:
       - name: terraria
-        # Multi-Arch Image (AMD64 + ARM64)
-        image: hexlo/terraria-server-docker:latest
+        image: rfvgyhn/terraria:latest
         ports:
         - containerPort: 7777
           name: game
           protocol: TCP
         env:
-        - name: world
-          value: "/root/.local/share/Terraria/Worlds/world.wld"
-        - name: autocreate
-          value: "3"
-        - name: worldname
+        - name: WORLD_FILENAME
+          value: "world.wld"
+        - name: WORLD_NAME
           value: "K3s-World"
-        - name: difficulty
+        - name: DIFFICULTY
           value: "0"
-        - name: maxplayers
+        - name: MAX_PLAYERS
           value: "8"
-        - name: password
+        - name: PASSWORD
           value: ""
-        - name: motd
+        - name: MOTD
           value: "Welcome to K3s Terraria!"
-        - name: port
-          value: "7777"
-        - name: seed
-          value: ""
-        - name: worldpath
-          value: "/root/.local/share/Terraria/Worlds"
         volumeMounts:
         - name: terraria-data
-          mountPath: /root/.local/share/Terraria/Worlds
+          mountPath: /config/Worlds
         resources:
           requests:
             memory: "512Mi"
