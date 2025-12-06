@@ -19,46 +19,35 @@ spec:
     spec:
       containers:
       - name: terraria
-        image: ryshe/terraria:latest
+        image: beardedio/terraria:latest
         ports:
         - containerPort: 7777
           name: game
           protocol: TCP
         env:
-        - name: WORLD_FILENAME
-          value: "world.wld"
-        # WICHTIG: Mit Bindestrich!
+        - name: WORLD
+          value: "Worlds/world.wld"
+        # Auto-create: 1=small, 2=medium, 3=large
         - name: AUTOCREATE
           value: "3"
-        - name: SEED
-          value: ""
         - name: WORLDNAME
           value: "K3s-World"
+        # Difficulty: 0=Normal, 1=Expert, 2=Master, 3=Journey
         - name: DIFFICULTY
           value: "0"
         - name: MAXPLAYERS
           value: "8"
-        - name: PORT
-          value: "7777"
         - name: PASSWORD
           value: ""
         - name: MOTD
-          value: "Welcome to K3s Terraria!"
-        - name: BANLIST
-          value: "banlist.txt"
+          value: "Welcome to K3s Terraria Server!"
         - name: SECURE
           value: "1"
         - name: LANGUAGE
           value: "en-US"
-        - name: UPNP
-          value: "0"
-        - name: NPCSTREAM
-          value: "60"
-        - name: PRIORITY
-          value: "1"
         volumeMounts:
         - name: terraria-data
-          mountPath: /root/.local/share/Terraria/Worlds
+          mountPath: /config
         resources:
           requests:
             memory: "512Mi"
@@ -69,15 +58,15 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 7777
-          initialDelaySeconds: 90
+          initialDelaySeconds: 120
           periodSeconds: 30
-          failureThreshold: 3
+          failureThreshold: 5
         readinessProbe:
           tcpSocket:
             port: 7777
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 10
-          failureThreshold: 5
+          failureThreshold: 10
       volumes:
       - name: terraria-data
         persistentVolumeClaim:
