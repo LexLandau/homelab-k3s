@@ -17,9 +17,6 @@ spec:
       labels:
         app: terraria
     spec:
-      # Optional: Pin zu bestimmter Node
-      # nodeSelector:
-      #   kubernetes.io/hostname: rpi4
       containers:
       - name: terraria
         image: ryshe/terraria:latest
@@ -30,27 +27,38 @@ spec:
         env:
         - name: WORLD_FILENAME
           value: "world.wld"
-        # Auto-create world wenn nicht vorhanden:
-        # 1=Small, 2=Medium, 3=Large
+        # WICHTIG: Mit Bindestrich!
         - name: AUTOCREATE
           value: "3"
-        - name: WORLD_NAME
+        - name: SEED
+          value: ""
+        - name: WORLDNAME
           value: "K3s-World"
-        # Difficulty: 0=Normal, 1=Expert, 2=Master, 3=Journey
         - name: DIFFICULTY
           value: "0"
-        - name: MAX_PLAYERS
+        - name: MAXPLAYERS
           value: "8"
+        - name: PORT
+          value: "7777"
         - name: PASSWORD
-          value: ""  # Leer = kein Passwort
+          value: ""
         - name: MOTD
           value: "Welcome to K3s Terraria!"
+        - name: BANLIST
+          value: "banlist.txt"
+        - name: SECURE
+          value: "1"
+        - name: LANGUAGE
+          value: "en-US"
+        - name: UPNP
+          value: "0"
+        - name: NPCSTREAM
+          value: "60"
+        - name: PRIORITY
+          value: "1"
         volumeMounts:
         - name: terraria-data
           mountPath: /root/.local/share/Terraria/Worlds
-        - name: config
-          mountPath: /root/.local/share/Terraria/serverconfig.txt
-          subPath: serverconfig.txt
         resources:
           requests:
             memory: "512Mi"
@@ -61,17 +69,16 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 7777
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 30
+          failureThreshold: 3
         readinessProbe:
           tcpSocket:
             port: 7777
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
+          failureThreshold: 5
       volumes:
       - name: terraria-data
         persistentVolumeClaim:
           claimName: terraria-data
-      - name: config
-        configMap:
-          name: terraria-config
