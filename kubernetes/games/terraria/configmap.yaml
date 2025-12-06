@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terraria-config
+  namespace: terraria
+data:
+  serverconfig.txt: |
+    # Terraria Server Configuration
+    world=/root/.local/share/Terraria/Worlds/world.wld
+    autocreate=3
+    worldname=K3s-World
+    difficulty=0
+    maxplayers=8
+    port=7777
+    password=
+    motd=Welcome to K3s Terraria Server!
+    worldpath=/root/.local/share/Terraria/Worlds/
+    banlist=banlist.txt
+    secure=1
+    language=en-US
+    upnp=0
+    npcstream=60
+    priority=1

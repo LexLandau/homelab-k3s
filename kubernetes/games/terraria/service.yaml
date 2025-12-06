@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: terraria
+  namespace: terraria
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.230  # Neue IP für Terraria
+  selector:
+    app: terraria
+  ports:
+  - port: 7777
+    targetPort: 7777
+    protocol: TCP
+    name: game
