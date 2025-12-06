@@ -24,17 +24,14 @@ spec:
         - containerPort: 7777
           name: game
           protocol: TCP
-        # WICHTIG: Command überschreiben um -autocreate zu erzwingen!
-        command:
-        - "/bin/sh"
-        - "-c"
-        args:
-        - |
-          /tshock/TerrariaServer.bin.x86_64 \
-            -config /root/.local/share/Terraria/serverconfig.txt \
-            -world /root/.local/share/Terraria/Worlds/world.wld \
-            -autocreate 3 \
-            -worldname "K3s-World"
+        # Original Entrypoint nutzen!
+        env:
+        - name: WORLD_FILENAME
+          value: "world.wld"
+        - name: AUTOCREATE
+          value: "3"
+        - name: WORLDNAME
+          value: "K3s-World"
         volumeMounts:
         - name: terraria-data
           mountPath: /root/.local/share/Terraria/Worlds
@@ -45,18 +42,6 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "2000m"
-        livenessProbe:
-          tcpSocket:
-            port: 7777
-          initialDelaySeconds: 120
-          periodSeconds: 30
-          failureThreshold: 5
-        readinessProbe:
-          tcpSocket:
-            port: 7777
-          initialDelaySeconds: 90
-          periodSeconds: 10
-          failureThreshold: 10
       volumes:
       - name: terraria-data
         persistentVolumeClaim:
