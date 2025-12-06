@@ -17,52 +17,31 @@ spec:
       labels:
         app: terraria
     spec:
-      initContainers:
-      # InitContainer: Erstellt Welt wenn nicht vorhanden
-      - name: world-creator
-        image: rfvgyhn/terraria:latest
-        command:
-        - sh
-        - -c
-        - |
-          if [ ! -f "/config/Worlds/world.wld" ]; then
-            echo "Creating new world..."
-            mkdir -p /config/Worlds
-            # World mit -autocreate erstellen
-            timeout 300 /opt/terraria/start-terraria-server.sh \
-              -world /config/Worlds/world.wld \
-              -autocreate 3 \
-              -worldname "K3s-World" || true
-            echo "World created!"
-          else
-            echo "World already exists!"
-          fi
-        volumeMounts:
-        - name: terraria-data
-          mountPath: /config/Worlds
       containers:
       - name: terraria
-        image: rfvgyhn/terraria:latest
+        # TShock - funktioniert auf ARM64!
+        image: ghcr.io/tshock/tshock:latest
         ports:
         - containerPort: 7777
           name: game
           protocol: TCP
-        env:
-        - name: WORLD_FILENAME
-          value: "world.wld"
-        - name: WORLD_NAME
-          value: "K3s-World"
-        - name: DIFFICULTY
-          value: "0"
-        - name: MAX_PLAYERS
-          value: "8"
-        - name: PASSWORD
-          value: ""
-        - name: MOTD
-          value: "Welcome to K3s Terraria!"
+        - containerPort: 7878
+          name: rest
+          protocol: TCP
+        args:
+          - "-world"
+          - "/tshock/world/world.wld"
+          - "-autocreate"
+          - "3"
+          - "-worldname"
+          - "K3s-World"
+          - "-difficulty"
+          - "0"
+          - "-maxplayers"
+          - "8"
         volumeMounts:
         - name: terraria-data
-          mountPath: /config/Worlds
+          mountPath: /tshock/world
         resources:
           requests:
             memory: "512Mi"
