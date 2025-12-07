@@ -38,7 +38,7 @@ spec:
                 - high-memory  # rpi5 als Fallback
       containers:
       - name: homeassistant
-        image: ghcr.io/home-assistant/home-assistant:2025.11
+        image: ghcr.io/home-assistant/home-assistant:2025.12
         ports:
         - containerPort: 8123
           name: http
