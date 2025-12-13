@@ -55,6 +55,15 @@ spec:
         - name: backup
           mountPath: /media/backup
           readOnly: false
+        - name: movies-backup-hdd
+          mountPath: /media/movies-backup-hdd
+          readOnly: false
+        - name: series-backup-hdd
+          mountPath: /media/series-backup-hdd
+          readOnly: false
+        - name: music-backup-hdd
+          mountPath: /media/music-backup-hdd
+          readOnly: false
         resources:
           requests:
             memory: "1Gi"
@@ -104,4 +113,16 @@ spec:
       - name: backup
         hostPath:
           path: /mnt/media/backup
+          type: Directory
+      - name: movies-backup-hdd
+        hostPath:
+          path: /mnt/media/backup/Filme
+          type: Directory
+      - name: series-backup-hdd
+        hostPath:
+          path: /mnt/media/backup/Serien
+          type: Directory
+      - name: music-backup-hdd
+        hostPath:
+          path: /mnt/media/backup/Musik
           type: Directory
