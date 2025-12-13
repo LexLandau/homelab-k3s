@@ -74,34 +74,34 @@ spec:
             port: 8096
           initialDelaySeconds: 30
           periodSeconds: 10
-        volumes:
-        - name: config
-          persistentVolumeClaim:
-            claimName: jellyfin-config
-        - name: cache
-          persistentVolumeClaim:
-            claimName: jellyfin-cache
-        - name: movies-backup
-          hostPath:
-            path: /mnt/media/series/filme
-            type: Directory
-        - name: movies-nas
-          hostPath:
-            path: /mnt/media/movies/Filme
-            type: Directory
-        - name: series-backup
-          hostPath:
-            path: /mnt/media/series/serien
-            type: Directory
-        - name: series-nas
-          hostPath:
-            path: /mnt/media/movies/Serien
-            type: Directory
-        - name: music
-          hostPath:
-            path: /mnt/media/series/Musik
-            type: Directory
-        - name: backup
-          hostPath:
-            path: /mnt/media/backup
-            type: Directory
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: jellyfin-config
+      - name: cache
+        persistentVolumeClaim:
+          claimName: jellyfin-cache
+      - name: movies-backup
+        hostPath:
+          path: /mnt/media/series/filme
+          type: Directory
+      - name: movies-nas
+        hostPath:
+          path: /mnt/media/movies/Filme
+          type: Directory
+      - name: series-backup
+        hostPath:
+          path: /mnt/media/series/serien
+          type: Directory
+      - name: series-nas
+        hostPath:
+          path: /mnt/media/movies/Serien
+          type: Directory
+      - name: music
+        hostPath:
+          path: /mnt/media/series/Musik
+          type: Directory
+      - name: backup
+        hostPath:
+          path: /mnt/media/backup
+          type: Directory
