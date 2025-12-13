@@ -52,6 +52,9 @@ spec:
         - name: music
           mountPath: /media/music
           readOnly: true
+        - name: backup
+          mountPath: /media/backup
+          readOnly: false
         resources:
           requests:
             memory: "1Gi"
@@ -97,4 +100,8 @@ spec:
       - name: music
         hostPath:
           path: /mnt/media/movies/Musik
+          type: Directory
+      - name: backup
+        hostPath:
+          path: /mnt/media/backup
           type: Directory
