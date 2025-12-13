@@ -31,7 +31,7 @@ spec:
         - name: TZ
           value: "Europe/Berlin"
         - name: JELLYFIN_PublishedServerUrl
-          value: "http://192.168.1.224:8096"
+          value: "http://192.168.1.10:8096"  # <- WAR 192.168.1.224
         volumeMounts:
         - name: config
           mountPath: /config
