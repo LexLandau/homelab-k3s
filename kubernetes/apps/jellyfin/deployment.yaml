@@ -86,10 +86,10 @@ spec:
       volumes:
       - name: config
         persistentVolumeClaim:
-          claimName: jellyfin-config
+          claimName: jellyfin-config-nvme
       - name: cache
         persistentVolumeClaim:
-          claimName: jellyfin-cache
+          claimName: jellyfin-cache-nvme
       - name: movies-backup
         hostPath:
           path: /mnt/media/series/filme
