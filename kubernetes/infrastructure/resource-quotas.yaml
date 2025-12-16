@@ -1,0 +1,83 @@
+# Jellyfin Namespace Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: jellyfin-quota
+  namespace: jellyfin
+spec:
+  hard:
+    requests.cpu: "1000m"
+    requests.memory: "2Gi"
+    limits.cpu: "3000m"
+    limits.memory: "3.5Gi"
+    persistentvolumeclaims: "5"
+---
+# Home Assistant Namespace Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: homeassistant-quota
+  namespace: homeassistant
+spec:
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "1Gi"
+    limits.cpu: "2000m"
+    limits.memory: "2Gi"
+    persistentvolumeclaims: "3"
+---
+# Monitoring Namespace Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: monitoring-quota
+  namespace: monitoring
+spec:
+  hard:
+    requests.cpu: "1500m"
+    requests.memory: "2Gi"
+    limits.cpu: "3000m"
+    limits.memory: "4Gi"
+    persistentvolumeclaims: "10"
+---
+# MQTT Namespace Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mqtt-quota
+  namespace: mqtt
+spec:
+  hard:
+    requests.cpu: "200m"
+    requests.memory: "256Mi"
+    limits.cpu: "1000m"
+    limits.memory: "512Mi"
+    persistentvolumeclaims: "2"
+---
+# Pi-hole Namespace Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: pihole-quota
+  namespace: pihole
+spec:
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "1Gi"
+    limits.cpu: "1000m"
+    limits.memory: "1.5Gi"
+    persistentvolumeclaims: "3"
+---
+# Terraria Namespace Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: terraria-quota
+  namespace: terraria
+spec:
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "1Gi"
+    limits.cpu: "1500m"
+    limits.memory: "2Gi"
+    persistentvolumeclaims: "2"
