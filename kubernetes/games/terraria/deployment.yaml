@@ -20,6 +20,9 @@ spec:
       containers:
       - name: terraria
         image: ryshe/terraria:latest
+        env:
+        - name: WORLD_INDEX
+          value: "1"
         ports:
         - containerPort: 7777
           name: game
