@@ -17,7 +17,7 @@ spec:
       labels:
         app: homeassistant
     spec:
-      hostNetwork: true  # Für mDNS Device Discovery
+      hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       affinity:
         nodeAffinity:
@@ -28,14 +28,14 @@ spec:
               - key: node-role
                 operator: In
                 values:
-                - network-services  # rpi4
+                - network-services
           - weight: 50
             preference:
               matchExpressions:
               - key: node-role
                 operator: In
                 values:
-                - high-memory  # rpi5 als Fallback
+                - high-memory
       containers:
       - name: homeassistant
         image: ghcr.io/home-assistant/home-assistant:2025.12
@@ -53,8 +53,8 @@ spec:
             memory: "512Mi"
             cpu: "250m"
           limits:
-            memory: "2Gi"
-            cpu: "2000m"
+            memory: "1.5Gi"
+            cpu: "1500m"
         livenessProbe:
           httpGet:
             path: /
