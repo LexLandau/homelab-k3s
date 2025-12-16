@@ -17,6 +17,16 @@ spec:
       labels:
         app: terraria
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-role
+                operator: In
+                values:
+                - monitoring
       containers:
       - name: terraria
         image: ryshe/terraria:latest
@@ -24,7 +34,6 @@ spec:
         - containerPort: 7777
           name: game
           protocol: TCP
-        # KEIN expect - nutze Original Entrypoint
         stdin: true
         tty: true
         volumeMounts:
@@ -33,10 +42,10 @@ spec:
         resources:
           requests:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "250m"
           limits:
-            memory: "2Gi"
-            cpu: "2000m"
+            memory: "1.5Gi"
+            cpu: "1000m"
         livenessProbe:
           tcpSocket:
             port: 7777

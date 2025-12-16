@@ -1,0 +1,126 @@
+# Default LimitRange für alle Namespaces
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: jellyfin
+spec:
+  limits:
+  - max:
+      memory: "3Gi"
+      cpu: "2000m"
+    min:
+      memory: "64Mi"
+      cpu: "50m"
+    default:
+      memory: "512Mi"
+      cpu: "500m"
+    defaultRequest:
+      memory: "256Mi"
+      cpu: "250m"
+    type: Container
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: homeassistant
+spec:
+  limits:
+  - max:
+      memory: "2Gi"
+      cpu: "1500m"
+    min:
+      memory: "64Mi"
+      cpu: "50m"
+    default:
+      memory: "512Mi"
+      cpu: "500m"
+    defaultRequest:
+      memory: "256Mi"
+      cpu: "250m"
+    type: Container
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: monitoring
+spec:
+  limits:
+  - max:
+      memory: "2Gi"
+      cpu: "2000m"
+    min:
+      memory: "64Mi"
+      cpu: "50m"
+    default:
+      memory: "512Mi"
+      cpu: "500m"
+    defaultRequest:
+      memory: "256Mi"
+      cpu: "250m"
+    type: Container
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: mqtt
+spec:
+  limits:
+  - max:
+      memory: "512Mi"
+      cpu: "1000m"
+    min:
+      memory: "64Mi"
+      cpu: "50m"
+    default:
+      memory: "256Mi"
+      cpu: "250m"
+    defaultRequest:
+      memory: "128Mi"
+      cpu: "100m"
+    type: Container
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: pihole
+spec:
+  limits:
+  - max:
+      memory: "1.5Gi"
+      cpu: "1000m"
+    min:
+      memory: "256Mi"
+      cpu: "100m"
+    default:
+      memory: "512Mi"
+      cpu: "250m"
+    defaultRequest:
+      memory: "512Mi"
+      cpu: "200m"
+    type: Container
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: terraria
+spec:
+  limits:
+  - max:
+      memory: "2Gi"
+      cpu: "1500m"
+    min:
+      memory: "256Mi"
+      cpu: "100m"
+    default:
+      memory: "512Mi"
+      cpu: "500m"
+    defaultRequest:
+      memory: "512Mi"
+      cpu: "250m"
+    type: Container
