@@ -18,13 +18,14 @@ spec:
             walCompression: true
             affinity:
               nodeAffinity:
-                requiredDuringSchedulingIgnoredDuringExecution:
-                  nodeSelectorTerms:
-                  - matchExpressions:
-                    - key: node-role
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  preference:
+                    matchExpressions:
+                    - key: kubernetes.io/hostname
                       operator: In
                       values:
-                      - high-memory
+                      - rpi5
             resources:
               requests:
                 memory: 512Mi
@@ -58,10 +59,10 @@ spec:
               - weight: 100
                 preference:
                   matchExpressions:
-                  - key: node-role
+                  - key: kubernetes.io/hostname
                     operator: In
                     values:
-                    - high-memory
+                    - rpi5
           resources:
             requests:
               memory: 256Mi
@@ -116,3 +117,5 @@ spec:
       selfHeal: true
     syncOptions:
     - CreateNamespace=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
