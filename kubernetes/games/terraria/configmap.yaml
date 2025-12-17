@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terraria-autostart
+  namespace: terraria
+data:
+  start.sh: |
+    #!/bin/bash
+    echo "1" | /tshock/TerrariaServer.bin.x86_64 -config /root/.local/share/Terraria/Worlds/serverconfig.txt

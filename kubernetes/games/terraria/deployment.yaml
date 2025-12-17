@@ -20,6 +20,20 @@ spec:
       containers:
       - name: terraria
         image: ryshe/terraria:latest
+        command: ["/bin/bash", "/config/start.sh"]
+        volumeMounts:
+        - name: terraria-data
+          mountPath: /root/.local/share/Terraria/Worlds
+        - name: autostart
+          mountPath: /config
+        volumes:
+        - name: terraria-data
+          persistentVolumeClaim:
+            claimName: terraria-data
+        - name: autostart
+          configMap:
+            name: terraria-autostart
+            defaultMode: 0755
         env:
         - name: WORLD_INDEX
           value: "1"
