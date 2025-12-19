@@ -310,3 +310,13 @@ Resolved DNS performance issues and slow UI saves:
 - V2 is designed for high-end servers with 16+ CPU cores and NVMe-only setups
 
 For more details on V2 vs V1, see [Longhorn Performance Benchmark](https://github.com/longhorn/longhorn/wiki/Performance-Benchmark).
+
+## Recent Updates (December 19, 2025)
+
+### Phase 1: Core Infrastructure Upgrades
+- **Longhorn**: v1.10.0 → v1.10.1 (Bugfixes, Security)
+- **MetalLB**: v0.14.9 → v0.15.3 (CVE-2025-22874, FRR 10.4.1)
+- All services validated and operational
+- Zero downtime during upgrades
+
+**Next Steps:** K3s v1.30.8 → v1.31.8 (planned)
