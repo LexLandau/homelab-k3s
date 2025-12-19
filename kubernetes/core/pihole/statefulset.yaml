@@ -116,7 +116,7 @@ spec:
       name: config
     spec:
       accessModes: [ "ReadWriteOnce" ]
-      storageClassName: longhorn
+      storageClassName: longhorn-fast
       resources:
         requests:
           storage: 2Gi
@@ -124,7 +124,7 @@ spec:
       name: dnsmasq
     spec:
       accessModes: [ "ReadWriteOnce" ]
-      storageClassName: longhorn
+      storageClassName: longhorn-fast
       resources:
         requests:
           storage: 1Gi
