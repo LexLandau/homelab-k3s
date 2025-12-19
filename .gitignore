@@ -27,3 +27,4 @@ kubeconfig*
 # WSL2 spezifisch
 *.swp
 *~
+ansible/.k3s-token
