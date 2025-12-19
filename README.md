@@ -225,9 +225,9 @@ Potential additions:
 - 🛡️ **Fault Tolerant** - Can survive 1 node failure (etcd quorum)
 
 ### Memory Distribution (Optimized):
-- **rpi5 (8GB)**: Prometheus (912MB) + Grafana (691MB) + Jellyfin = 67%
-- **rpi4 (4GB)**: Pi-hole + Network services = 66%
-- **rpi4-cm4 (4GB)**: General workloads = 57%
+- **rpi5 (8GB)**: Prometheus (1373Mi) + Jellyfin (575Mi) + Grafana (312Mi) = **70%** usage
+- **rpi4 (4GB)**: Pi-hole (15Mi) + Longhorn + Network services = **72%** usage
+- **rpi4-cm4 (4GB)**: Home Assistant (509Mi) + Terraria (316Mi) + General workloads = **57%** usage
 
 All nodes well balanced! ✅
 
@@ -262,7 +262,7 @@ kubectl top nodes
 
 ---
 
-**Last Updated**: December 2, 2025  
+**Last Updated: December 19, 2025
 **Cluster Version**: K3s v1.30.8+k3s1  
 **Status**: 🟢 PRODUCTION-READY
 
