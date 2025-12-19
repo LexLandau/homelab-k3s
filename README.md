@@ -13,8 +13,8 @@ Alle Nodes sind Control Plane + Worker (keine Taints)
 
 ### Infrastructure
 - **K3s** v1.30.8+k3s1
-- **MetalLB** v0.14.9 - LoadBalancer (192.168.1.220-239)
-- **Longhorn** v1.7.2 - Distributed Storage (2 Replicas)
+- **MetalLB** v0.15.3 - LoadBalancer (192.168.1.220-239)
+- **Longhorn** v1.10.1 - Distributed Storage (2 Replicas)
 - **ArgoCD** v2.13.2 - GitOps Continuous Deployment
 - **Renovate Bot** - Automatic dependency updates via GitHub PRs
 
@@ -263,7 +263,7 @@ kubectl top nodes
 ---
 
 **Last Updated: December 19, 2025
-**Cluster Version**: K3s v1.30.8+k3s1  
+**Cluster Version**: K3s v1.30.8+k3s1 | Longhorn v1.10.1 | MetalLB v0.15.3  
 **Status**: 🟢 PRODUCTION-READY
 
 ---
