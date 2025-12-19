@@ -54,3 +54,17 @@ Everything else via Web-UI = fully editable!
   - Database size reduced from 100MB+ to <100KB
   - DNS cache hits at 0ms consistently
   - No more "stale answer" warnings
+
+## Performance Optimizations
+
+### Changes Made
+- **Storage**: Uses `longhorn-fast` StorageClass with 2 replicas (instead of 3)
+- **Query Log**: Limited to 1 day retention (`MAXDBDAYS=1`)
+- **Upstream DNS**: Fritz!Box (DNS-over-TLS) → Google DNS → Cloudflare DNS
+
+### Results
+- UI save time: **10-12s → 3s** (70% improvement)
+- Database size: **100MB+ → 96KB** (99.9% reduction)
+- DNS cache hits: **0ms** consistently
+- Write performance: **60 MB/s** average
+- No more "stale answer" warnings
