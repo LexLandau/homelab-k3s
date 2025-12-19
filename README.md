@@ -295,3 +295,18 @@ Resolved DNS performance issues and slow UI saves:
 
 **Alle Änderungen sind GitOps-managed** und werden automatisch bei Neudeployments angewendet.
 
+
+### Storage Architecture Details
+
+**Physical Hardware:**
+- **rpi5**: 477GB NVMe (System + Longhorn) + 3x USB3 HDDs (1.8TB + 1.8TB + 3.6TB for Media)
+- **rpi4-cm4**: 477GB NVMe (System + Longhorn)
+- **rpi4**: 119GB SSD via USB3 (System + Longhorn)
+
+**Why V1 Data Engine (not V2/SPDK)?**
+- V2 requires 1 CPU core (100% usage) per node = 25% CPU overhead on 4-core Pis
+- V1 already achieves 60 MB/s write performance with 2 replicas
+- Current workloads are not I/O-intensive enough to justify V2 overhead
+- V2 is designed for high-end servers with 16+ CPU cores and NVMe-only setups
+
+For more details on V2 vs V1, see [Longhorn Performance Benchmark](https://github.com/longhorn/longhorn/wiki/Performance-Benchmark).
