@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-ftl-config
+  namespace: pihole
+data:
+  pihole-FTL.conf: |
+    MAXDBDAYS=1
+    DBINTERVAL=30.0

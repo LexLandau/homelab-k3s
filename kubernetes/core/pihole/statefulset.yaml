@@ -21,110 +21,109 @@ spec:
           - 8.8.8.8
       securityContext:
         fsGroup: 999
-      
       initContainers:
-      - name: fix-permissions
-        image: busybox:latest
-        command:
-        - sh
-        - -c
-        - |
-          chown -R 999:999 /etc/pihole /etc/dnsmasq.d
-          chmod -R 755 /etc/pihole /etc/dnsmasq.d
-        volumeMounts:
-        - name: config
-          mountPath: /etc/pihole
-        - name: dnsmasq
-          mountPath: /etc/dnsmasq.d
-        securityContext:
-          runAsUser: 0
-      
+        - name: fix-permissions
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              chown -R 999:999 /etc/pihole /etc/dnsmasq.d
+              chmod -R 755 /etc/pihole /etc/dnsmasq.d
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pihole
+            - name: dnsmasq
+              mountPath: /etc/dnsmasq.d
+          securityContext:
+            runAsUser: 0
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - rpi5
-      
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - rpi5
       containers:
-      - name: pihole
-        image: pihole/pihole:2025.11.1
-        ports:
-        - containerPort: 53
-          name: dns-tcp
-          protocol: TCP
-        - containerPort: 53
-          name: dns-udp
-          protocol: UDP
-        - containerPort: 80
-          name: http
-          protocol: TCP
-        env:
-        - name: TZ
-          value: "Europe/Berlin"
-        - name: PIHOLE_DNS_
-          value: "192.168.1.1;8.8.8.8;1.1.1.1"
-        - name: FTLCONF_webserver_api_password
-          valueFrom:
-            secretKeyRef:
-              name: pihole-password
-              key: password
-        - name: FTLCONF_dns_listeningMode
-          value: "all"
-        volumeMounts:
-        - name: config
-          mountPath: /etc/pihole
-        - name: dnsmasq
-          mountPath: /etc/dnsmasq.d
-        
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-        
+        - name: pihole
+          image: pihole/pihole:2025.11.1
+          ports:
+            - containerPort: 53
+              name: dns-tcp
+              protocol: TCP
+            - containerPort: 53
+              name: dns-udp
+              protocol: UDP
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/Berlin"
+            - name: PIHOLE_DNS_
+              value: "192.168.1.1;8.8.8.8;1.1.1.1"
+            - name: FTLCONF_webserver_api_password
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-password
+                  key: password
+            - name: FTLCONF_dns_listeningMode
+              value: "all"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pihole
+            - name: dnsmasq
+              mountPath: /etc/dnsmasq.d
+            - name: ftl-config
+              mountPath: /etc/pihole/pihole-FTL.conf
+              subPath: pihole-FTL.conf
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /admin/
+              port: 80
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /admin/
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: ftl-config
+          configMap:
+            name: pihole-ftl-config
+  volumeClaimTemplates:
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-fast
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "50m"
-          limits:
-            memory: "512Mi"
-            cpu: "200m"
-        
-        livenessProbe:
-          httpGet:
-            path: /admin/
-            port: 80
-          initialDelaySeconds: 90
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 6
-        
-        readinessProbe:
-          httpGet:
-            path: /admin/
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-  
-  volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: longhorn-fast
-      resources:
-        requests:
-          storage: 2Gi
-  - metadata:
-      name: dnsmasq
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: longhorn-fast
-      resources:
-        requests:
-          storage: 1Gi
+            storage: 2Gi
+    - metadata:
+        name: dnsmasq
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-fast
+        resources:
+          requests:
+            storage: 1Gi
