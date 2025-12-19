@@ -265,3 +265,33 @@ kubectl top nodes
 **Last Updated**: December 2, 2025  
 **Cluster Version**: K3s v1.30.8+k3s1  
 **Status**: 🟢 PRODUCTION-READY
+
+---
+
+## 🔧 Recent Optimizations (December 19, 2025)
+
+### Pi-hole Performance Tuning
+Resolved DNS performance issues and slow UI saves:
+
+**Problem**: 
+- Internetseiten waren sekunden-lang nicht erreichbar
+- Pi-hole UI speichern dauerte 10-12 Sekunden
+- 365.000 Query-Log-Einträge belasteten jeden Neustart
+
+**Lösung**:
+1. **Storage-Optimierung**: Neue `longhorn-fast` StorageClass mit 2 Replicas (statt 3)
+   - 33% weniger Netzwerk-Overhead bei Schreibzugriffen
+   - Konsistente 60 MB/s Write-Performance
+2. **Query-Log-Begrenzung**: `MAXDBDAYS=1` in pihole-FTL.conf
+   - Datenbank bleibt unter 100KB (war >100MB)
+   - Nur noch ~200 Queries im RAM (war 147.000)
+3. **Upstream-DNS optimiert**: Fritz!Box (DNS-over-TLS) mit Google/Cloudflare Fallbacks
+
+**Ergebnis**:
+- ✅ UI Save-Zeit: 10-12s → **3s** (70% Verbesserung)
+- ✅ DNS Cache Hits: **0ms** (vorher "stale answers")
+- ✅ Datenbank: 365k Rows → **~200 Rows** (99.9% Reduktion)
+- ✅ Keine Verbindungsprobleme mehr
+
+**Alle Änderungen sind GitOps-managed** und werden automatisch bei Neudeployments angewendet.
+
