@@ -98,7 +98,7 @@ spec:
           type: Directory
       - name: movies-nas
         hostPath:
-          path: /mnt/media/movies/filme
+          path: /mnt/media/movies/Filme
           type: Directory
       - name: series-backup
         hostPath:
@@ -106,7 +106,7 @@ spec:
           type: Directory
       - name: series-nas
         hostPath:
-          path: /mnt/media/movies/serien
+          path: /mnt/media/movies/Serien
           type: Directory
       - name: music
         hostPath:
