@@ -320,3 +320,56 @@ For more details on V2 vs V1, see [Longhorn Performance Benchmark](https://githu
 - Zero downtime during upgrades
 
 **Next Steps:** K3s v1.30.8 → v1.31.8 (planned)
+
+---
+
+## 🎬 Jellyfin Configuration Notes (December 21, 2025)
+
+### Current Version: 10.10.3 (Stable)
+
+**Why not 10.11.x?**
+- Jellyfin 10.11.x has a critical memory leak on ARM64/Raspberry Pi during library scans
+- GitHub Issues: [#15728](https://github.com/jellyfin/jellyfin/issues/15728), [#13165](https://github.com/jellyfin/jellyfin/issues/13165), [#11588](https://github.com/jellyfin/jellyfin/issues/11588)
+- Symptoms: Memory explosion from 500Mi → 4Gi+ in seconds → OOM crash
+- **10.10.3 is the last stable version** for Raspberry Pi setups
+
+### Optimizations Applied
+```yaml
+Image: jellyfin/jellyfin:10.10.3
+Memory Limits: 4Gi limit / 2Gi request
+Environment Variables:
+  - JELLYFIN_parallel_scan_tasks: "1"           # Limit concurrent file scanning
+  - JELLYFIN_FFmpeg__probesize: "50000000"      # 50M (reduced from 200M default)
+  - JELLYFIN_FFmpeg__analyzeduration: "50000000" # 50M (reduced from 200M default)
+  - MALLOC_TRIM_THRESHOLD_: "100000"            # Better glibc heap management
+```
+
+### Library Configuration (NFO-Only)
+- **Metadata Downloaders**: ALL disabled (TMDb, OMDb, etc.)
+- **Metadata Readers**: ONLY "Nfo" enabled
+- **Download Images**: Disabled
+- **Reason**: Reduces memory usage and API calls during scans
+
+### Performance Results
+- ✅ **~327+ Movies scanned successfully** (3x USB3 HDDs)
+- ✅ **Memory stable at ~600Mi** (previously crashed at 4Gi)
+- ✅ **No OOM kills** during library scans
+- ✅ **TV Shows & Music libraries working**
+
+### Storage Layout
+```
+/media/movies-backup-hdd   → /mnt/media/backup/Filme    (USB HDD 1)
+/media/movies-nas          → /mnt/media/movies/Filme    (USB HDD 2)
+/media/series-nas          → /mnt/media/movies/Serien   (USB HDD 2)
+/media/music              → /mnt/media/series/Musik    (USB HDD 3)
++ backup directories for redundancy
+```
+
+### Migration Path to 10.11.x (Future)
+Monitor these GitHub issues for memory leak fixes:
+- Watch for 10.11.6+ release notes
+- Test in staging before upgrading
+- Database from 10.10.3 should be compatible
+
+For detailed setup notes, see: [JELLYFIN_SETUP.md](./JELLYFIN_SETUP.md)
+
