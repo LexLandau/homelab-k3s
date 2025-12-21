@@ -7,11 +7,11 @@ metadata:
     app: jellyfin
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: jellyfin
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -36,6 +36,10 @@ spec:
           value: "100000"
         - name: JELLYFIN_parallel_scan_tasks
           value: "1"
+        - name: JELLYFIN_FFmpeg__probesize
+          value: "50000000"
+        - name: JELLYFIN_FFmpeg__analyzeduration
+          value: "50000000"
         volumeMounts:
         - name: config
           mountPath: /config
