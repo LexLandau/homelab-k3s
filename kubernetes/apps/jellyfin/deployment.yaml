@@ -32,6 +32,8 @@ spec:
           value: "Europe/Berlin"
         - name: JELLYFIN_PublishedServerUrl
         - name: MALLOC_TRIM_THRESHOLD_
+        - name: JELLYFIN_parallel_scan_tasks
+          value: "1"
           value: "100000"
           value: "http://192.168.1.10:8096"
         volumeMounts:
