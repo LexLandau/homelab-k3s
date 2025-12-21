@@ -21,7 +21,7 @@ spec:
         kubernetes.io/hostname: rpi5
       containers:
       - name: jellyfin
-        image: dfrgu/jellyfin-jemalloc:10.11.0-arm64
+        image: jellyfin/jellyfin:latest
         ports:
         - containerPort: 8096
           name: http
