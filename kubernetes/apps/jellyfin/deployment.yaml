@@ -94,7 +94,7 @@ spec:
           claimName: jellyfin-cache-nvme
       - name: movies-backup
         hostPath:
-          path: /mnt/media/series/Filme
+          path: /mnt/media/series/filme
           type: Directory
       - name: movies-nas
         hostPath:
@@ -102,7 +102,7 @@ spec:
           type: Directory
       - name: series-backup
         hostPath:
-          path: /mnt/media/series/Serien
+          path: /mnt/media/series/serien
           type: Directory
       - name: series-nas
         hostPath:
@@ -110,7 +110,7 @@ spec:
           type: Directory
       - name: music
         hostPath:
-          path: /mnt/media/movies/Musik
+          path: /mnt/media/series/Musik
           type: Directory
       - name: backup
         hostPath:
