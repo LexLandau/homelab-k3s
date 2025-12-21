@@ -108,7 +108,7 @@ spec:
           type: Directory
       - name: music
         hostPath:
-          path: /mnt/media/series/Musik
+          path: /mnt/media/movies/Musik
           type: Directory
       - name: backup
         hostPath:
