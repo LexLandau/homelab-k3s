@@ -31,11 +31,11 @@ spec:
         - name: TZ
           value: "Europe/Berlin"
         - name: JELLYFIN_PublishedServerUrl
+          value: "http://192.168.1.10:8096"
         - name: MALLOC_TRIM_THRESHOLD_
+          value: "100000"
         - name: JELLYFIN_parallel_scan_tasks
           value: "1"
-          value: "100000"
-          value: "http://192.168.1.10:8096"
         volumeMounts:
         - name: config
           mountPath: /config
