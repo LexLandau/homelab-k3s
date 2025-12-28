@@ -1,0 +1,14 @@
+[Unit]
+Description=Movies HDD (NTFS)
+After=local-fs.target
+Before=smbd.service k3s.service
+Requires=local-fs.target
+
+[Mount]
+What=/dev/disk/by-uuid/2A26A12826A0F5CB
+Where=/mnt/media/movies
+Type=ntfs3
+Options=rw,noatime,uid=1000,gid=1000,nofail
+
+[Install]
+WantedBy=multi-user.target
