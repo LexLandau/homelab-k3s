@@ -12,7 +12,7 @@ k3s_server_options:
   - "--cluster-init"
   - "--tls-san={{ ansible_host }}"
   - "--node-ip={{ ansible_host }}"
-  - "--flannel-iface=eth0"
+  - "--flannel-iface=eth1"
 
 # 1Password Integration
 onepassword_credentials_file: "{{ lookup('env', 'HOME') }}/homelab-secrets/1password-credentials.json"
