@@ -39,11 +39,11 @@ spec:
                   name: nebula-sync-env
                   key: REPLICAS
             - name: CRON
-              value: "*/5 * * * *"
+              value: "*/30 * * * *"
             - name: FULL_SYNC
-              value: "true"
+              value: "false"
             - name: RUN_GRAVITY
-              value: "true"
+              value: "false"
             - name: TZ
               value: "Europe/Berlin"
           resources:
