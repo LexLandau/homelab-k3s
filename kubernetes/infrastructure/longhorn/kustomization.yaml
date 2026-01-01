@@ -4,5 +4,5 @@ kind: Kustomization
 namespace: longhorn-system
 
 resources:
-  - https://raw.githubusercontent.com/longhorn/longhorn/v1.10.1/deploy/longhorn.yaml
+  - longhorn.yaml
   - storageclass-fast.yaml
