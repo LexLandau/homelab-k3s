@@ -1,63 +1,82 @@
-# Pi-hole Configuration
+# Pi-hole High Availability Configuration
+
+## Architecture
+```
+                    ┌─────────────────────────────────┐
+                    │    MetalLB LoadBalancer         │
+                    │      192.168.1.225 (DNS)        │
+                    │      192.168.1.220 (Web Admin)  │
+                    └────────────┬────────────────────┘
+                                 │
+              ┌──────────────────┼──────────────────┐
+              ▼                                     ▼
+    ┌──────────────────┐                 ┌──────────────────┐
+    │   pihole-0       │                 │   pihole-1       │
+    │   (Primary)      │ ◄─────────────► │   (Replica)      │
+    │   Node: auto     │   nebula-sync   │   Node: auto     │
+    └──────────────────┘   (5 min)       └──────────────────┘
+```
+
+## Components
+
+### StatefulSet (2 Replicas)
+- **pihole-0**: Primary instance - make config changes here
+- **pihole-1**: Replica instance - auto-synced from primary
+- **podAntiAffinity**: Ensures pods run on different nodes
+
+### Services
+| Service | IP | Purpose |
+|---------|-----|---------|
+| pihole-dns | 192.168.1.225:53 | DNS (both pods, HA) |
+| pihole-web | 192.168.1.220:80 | Web Admin (pihole-0 only) |
+| pihole-headless | None | Internal StatefulSet DNS |
+
+### Nebula-Sync
+- Syncs blocklists, whitelists, DNS records every 5 minutes
+- Primary → Replica direction only
+- Runs `gravity` after sync to apply changes
+
+## Usage
+
+### Access Web Admin
+```
+http://192.168.1.220/admin
+```
+Always use this IP for configuration - it points to pihole-0 (Primary).
+
+### DNS Configuration (Fritz!Box)
+Set DNS server in DHCP settings to: `192.168.1.225`
+
+### Verify HA Status
+```bash
+# Check both pods running on different nodes
+kubectl get pods -n pihole -o wide
+
+# Test DNS failover
+kubectl delete pod pihole-0 -n pihole
+# DNS should continue working via pihole-1
+```
+
+### Check Sync Status
+```bash
+kubectl logs -n pihole -l app=nebula-sync -f
+```
+
+## Failover Behavior
+
+1. **Node failure**: Pod restarts on same node, DNS served by other pod
+2. **Pod crash**: Kubernetes restarts pod, ~30s failover
+3. **Config changes**: Make on 192.168.1.220, synced to replica in ≤5 min
+
+## Storage
+
+Each pod has independent Longhorn volumes:
+- `config-pihole-0`, `config-pihole-1` (2Gi each)
+- `dnsmasq-pihole-0`, `dnsmasq-pihole-1` (1Gi each)
+
+This prevents SQLite locking issues.
 
 ## Version
 - Pi-hole: 2025.11.1
-- Image: pihole/pihole:2025.11.1
-
-## GitOps Philosophy
-**Git manages infrastructure:**
-- StatefulSet, Services, Networking
-- Resource limits, Persistence
-- Image versions, Permissions
-
-**Web-UI manages Pi-hole config:**
-- DNS upstream servers
-- Blocklists, Whitelists
-- Cache size, Query logging
-
-## Services
-- DNS: 192.168.1.225:53 (TCP+UDP)
-- Web-UI: http://192.168.1.220/admin
-
-## Initial Setup
-1. Open: http://192.168.1.220/admin
-2. Login with password from secret
-3. Settings → DNS:
-   - Fritz!Box: 192.168.1.1 (DNS-over-TLS, primary)
-   - Google: 8.8.8.8 (fallback)
-   - Cloudflare: 1.1.1.1 (fallback)
-4. Settings → System:
-   - DNS Cache: 50000
-5. Configure blocklists as needed
-
-## Persistence
-- Config: volumeClaimTemplate (2Gi, longhorn-fast)
-- Dnsmasq: volumeClaimTemplate (1Gi, longhorn-fast)
-- Settings persist across restarts
-
-## Why minimal FTLCONF_?
-FTLCONF_ variables make Web-UI read-only.
-We only set password + listening mode.
-Everything else via Web-UI = fully editable!
-
-## Performance Optimizations
-
-### Changes Made
-- **Storage**: Uses `longhorn-fast` StorageClass with 2 replicas (instead of 3)
-- **Query Log**: Limited to 1 day retention (`MAXDBDAYS=1`)
-- **Upstream DNS**: Fritz!Box (DNS-over-TLS) → Google DNS → Cloudflare DNS
-
-### Results
-- UI save time: **10-12s → 3s** (70% improvement)
-- Database size: **100MB+ → 96KB** (99.9% reduction)
-- DNS cache hits: **0ms** consistently
-- Write performance: **60 MB/s** average
-- Storage overhead: **33% reduction** (2 replicas vs 3)
-- No more "stale answer" warnings
-
-### Technical Details
-The massive performance improvement came from two factors:
-1. Reducing Longhorn replicas from 3 to 2 (less network overhead)
-2. Limiting query log retention to 1 day (database stayed at 365k rows, causing 10s restarts)
-
-The database size was the primary bottleneck - Pi-hole loads ALL queries from disk on every restart (which happens on every settings save).
+- Nebula-Sync: latest
+- Storage: longhorn-fast (2 replicas)

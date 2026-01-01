@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nebula-sync
+  namespace: pihole
+  labels:
+    app: nebula-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nebula-sync
+  template:
+    metadata:
+      labels:
+        app: nebula-sync
+    spec:
+      containers:
+        - name: nebula-sync
+          image: ghcr.io/lovelaze/nebula-sync:latest
+          env:
+            # Primary Pi-hole (pihole-0) - hier werden Änderungen gemacht
+            - name: PRIMARY
+              value: "http://pihole-0.pihole-headless.pihole.svc.cluster.local|$(PIHOLE_PASSWORD)"
+            # Replica Pi-hole (pihole-1) - wird automatisch synchronisiert
+            - name: REPLICAS
+              value: "http://pihole-1.pihole-headless.pihole.svc.cluster.local|$(PIHOLE_PASSWORD)"
+            # Passwort aus bestehendem Secret
+            - name: PIHOLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-password
+                  key: password
+            # Sync alle 5 Minuten
+            - name: CRON
+              value: "*/5 * * * *"
+            # Vollständige Synchronisation
+            - name: FULL_SYNC
+              value: "true"
+            # Gravity nach Sync aktualisieren
+            - name: RUN_GRAVITY
+              value: "true"
+            - name: TZ
+              value: "Europe/Berlin"
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+      # Starte erst wenn beide Pi-holes laufen
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: pihole
+              topologyKey: kubernetes.io/hostname

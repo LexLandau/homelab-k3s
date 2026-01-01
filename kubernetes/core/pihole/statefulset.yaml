@@ -4,8 +4,8 @@ metadata:
   name: pihole
   namespace: pihole
 spec:
-  serviceName: pihole
-  replicas: 1
+  serviceName: pihole-headless
+  replicas: 2
   selector:
     matchLabels:
       app: pihole
@@ -14,13 +14,21 @@ spec:
       labels:
         app: pihole
     spec:
-      dnsPolicy: "None"
+      # Verteile Pods auf verschiedene Nodes für echte HA
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: pihole
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        fsGroup: 999
+      dnsPolicy: None
       dnsConfig:
         nameservers:
           - 192.168.1.1
           - 8.8.8.8
-      securityContext:
-        fsGroup: 999
       initContainers:
         - name: fix-permissions
           image: busybox:latest
@@ -30,22 +38,13 @@ spec:
             - |
               chown -R 999:999 /etc/pihole /etc/dnsmasq.d
               chmod -R 755 /etc/pihole /etc/dnsmasq.d
+          securityContext:
+            runAsUser: 0
           volumeMounts:
             - name: config
               mountPath: /etc/pihole
             - name: dnsmasq
               mountPath: /etc/dnsmasq.d
-          securityContext:
-            runAsUser: 0
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - rpi5
       containers:
         - name: pihole
           image: pihole/pihole:2025.11.1
@@ -90,6 +89,14 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "200m"
+          # Readiness auf DNS statt Web - erkennt FTL-Probleme schneller
+          readinessProbe:
+            tcpSocket:
+              port: 53
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /admin/
@@ -98,14 +105,6 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 6
-          readinessProbe:
-            httpGet:
-              path: /admin/
-              port: 80
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
       volumes:
         - name: ftl-config
           configMap:
