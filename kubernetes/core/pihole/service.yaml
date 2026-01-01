@@ -23,6 +23,7 @@ spec:
       name: http
 ---
 # DNS LoadBalancer - routet zu BEIDEN Pods (HA)
+# externalTrafficPolicy: Cluster für echtes Failover zwischen Nodes
 apiVersion: v1
 kind: Service
 metadata:
@@ -33,7 +34,7 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.1.225
-  externalTrafficPolicy: Local
+  externalTrafficPolicy: Cluster
   selector:
     app: pihole
   ports:
