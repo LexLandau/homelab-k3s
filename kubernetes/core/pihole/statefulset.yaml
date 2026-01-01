@@ -102,9 +102,9 @@ spec:
               path: /admin/
               port: 80
             initialDelaySeconds: 90
-            periodSeconds: 30
+            periodSeconds: 60
             timeoutSeconds: 5
-            failureThreshold: 6
+            failureThreshold: 10
       volumes:
         - name: ftl-config
           configMap:
