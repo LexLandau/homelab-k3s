@@ -9,8 +9,7 @@ spec:
     repoURL: https://github.com/LexLandau/homelab-k3s.git
     targetRevision: main
     path: kubernetes/infrastructure
-    directory:
-      recurse: true
+    kustomize: {}
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
