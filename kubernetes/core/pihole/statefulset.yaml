@@ -5,7 +5,7 @@ metadata:
   namespace: pihole
 spec:
   serviceName: pihole-headless
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: pihole
