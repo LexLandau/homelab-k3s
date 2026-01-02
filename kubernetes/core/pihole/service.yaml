@@ -47,15 +47,18 @@ spec:
       name: dns-udp
 ---
 # Web Admin LoadBalancer - NUR pihole-0 (Primary) für Config-Änderungen
+# Annotation deaktiviert K3s svclb (MetalLB handhabt LoadBalancer)
 apiVersion: v1
 kind: Service
 metadata:
   name: pihole-web
   namespace: pihole
+  annotations:
+    svccontroller.k3s.cattle.io/loadbalancer: "false"
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.1.220
-  externalTrafficPolicy: Local
+  externalTrafficPolicy: Cluster
   selector:
     app: pihole
     statefulset.kubernetes.io/pod-name: pihole-0
