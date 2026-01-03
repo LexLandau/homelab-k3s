@@ -12,7 +12,7 @@
 Alle Nodes sind Control Plane + Worker (keine Taints)
 
 ### Infrastructure
-- **K3s** v1.30.8+k3s1
+- **K3s** v1.33.6+k3s1
 - **MetalLB** v0.15.3 - LoadBalancer (192.168.1.220-239)
 - **Longhorn** v1.10.1 - Distributed Storage (2 Replicas)
 - **ArgoCD** v2.13.2 - GitOps Continuous Deployment
@@ -26,7 +26,7 @@ Alle Nodes sind Control Plane + Worker (keine Taints)
 |---------|------|---------|-------------|---------------|
 | **Pi-hole v2025** | DNS + Ad-Blocking | 192.168.1.220:80 (Web)<br>192.168.1.225:53 (DNS UDP) | Network-wide ad-blocking | rpi4 (StatefulSet) |
 | **Home Assistant v2025** | Smart Home | 192.168.1.223:8123 | Home automation hub | rpi4/rpi5 |
-| **Jellyfin** | Media Server | 192.168.1.224:8096 | 2x USB3 HDDs (Movies, Series, Music) | rpi5 (direct USB) |
+| **Jellyfin** | Media Server | 192.168.1.224:8096 | 3x USB3 HDDs (Movies, Series, Music, Backup) | rpi5 (direct USB) |
 | **MQTT** | Message Broker | 192.168.1.222:1883 | IoT communication | Any node |
 | **Portainer** | Management UI | 192.168.1.227:9443 | Kubernetes Web UI | Any node |
 | **Prometheus** | Monitoring | Internal | Metrics collection & storage | rpi5 (high-memory) |
@@ -210,7 +210,7 @@ Potential additions:
 ### Deployed Services:
 - ✅ **Pi-hole v2025**: DNS + Ad-Blocking (Best Practice setup)
 - ✅ **Home Assistant v2025**: Smart Home automation
-- ✅ **Jellyfin**: Media Server with 2x USB3 HDDs
+- ✅ **Jellyfin**: Media Server with 3x USB3 HDDs
 - ✅ **MQTT**: IoT Message Broker
 - ✅ **Portainer**: Kubernetes Management UI
 - ✅ **Prometheus + Grafana**: Full monitoring stack
@@ -262,8 +262,8 @@ kubectl top nodes
 
 ---
 
-**Last Updated: December 19, 2025
-**Cluster Version**: K3s v1.30.8+k3s1 | Longhorn v1.10.1 | MetalLB v0.15.3  
+**Last Updated**: January 03, 2026  
+**Cluster Version**: K3s v1.33.6+k3s1 | Longhorn v1.10.1 | MetalLB v0.15.3  
 **Status**: 🟢 PRODUCTION-READY
 
 ---
@@ -319,7 +319,7 @@ For more details on V2 vs V1, see [Longhorn Performance Benchmark](https://githu
 - All services validated and operational
 - Zero downtime during upgrades
 
-**Next Steps:** K3s v1.30.8 → v1.31.8 (planned)
+**K3s Upgrade (January 2025):** v1.30.8 → v1.33.6+k3s1 ✅
 
 ---
 
@@ -358,10 +358,10 @@ Environment Variables:
 
 ### Storage Layout
 ```
-/media/movies-backup-hdd   → /mnt/media/backup/Filme    (USB HDD 1)
-/media/movies-nas          → /mnt/media/movies/Filme    (USB HDD 2)
-/media/series-nas          → /mnt/media/movies/Serien   (USB HDD 2)
-/media/music              → /mnt/media/series/Musik    (USB HDD 3)
+/media/movies-backup-hdd   → /mnt/media/backup/Filme    (USB HDD 1 - Backup)
+/media/movies-nas          → /mnt/media/movies/Filme    (USB HDD 2 - Movies)
+/media/series-nas          → /mnt/media/movies/Serien   (USB HDD 2 - Series)
+/media/music              → /mnt/media/series/Musik    (USB HDD 3 - Music)
 + backup directories for redundancy
 ```
 
@@ -372,4 +372,3 @@ Monitor these GitHub issues for memory leak fixes:
 - Database from 10.10.3 should be compatible
 
 For detailed setup notes, see: [JELLYFIN_SETUP.md](./JELLYFIN_SETUP.md)
-
