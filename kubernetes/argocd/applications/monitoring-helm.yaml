@@ -13,8 +13,9 @@ spec:
       values: |
         prometheus:
           prometheusSpec:
-            retention: 7d
-            retentionSize: "8GB"
+            # STORAGE FIX: Increased from 10Gi to 20Gi
+            retention: 5d              # Reduced from 7d
+            retentionSize: "18GB"      # Increased from 8GB (leave 2GB buffer)
             walCompression: true
             affinity:
               nodeAffinity:
@@ -39,7 +40,7 @@ spec:
                   storageClassName: longhorn
                   resources:
                     requests:
-                      storage: 10Gi
+                      storage: 20Gi    # INCREASED from 10Gi
             scrapeInterval: 30s
             evaluationInterval: 30s
 
