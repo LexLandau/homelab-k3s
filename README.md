@@ -24,9 +24,9 @@ Alle Nodes sind Control Plane + Worker (keine Taints)
 
 | Service | Type | IP/Port | Description | Node Affinity |
 |---------|------|---------|-------------|---------------|
-| **Pi-hole v2025** | DNS + Ad-Blocking | 192.168.1.220:80 (Web)<br>192.168.1.225:53 (DNS UDP) | Network-wide ad-blocking | rpi4 (StatefulSet) |
+| **Pi-hole v2025** | DNS + Ad-Blocking | 192.168.1.220:80 (Web)<br>192.168.1.225:53 (DNS UDP) | Network-wide ad-blocking | StatefulSet (3 replicas) |
 | **Home Assistant v2025** | Smart Home | 192.168.1.223:8123 | Home automation hub | rpi4/rpi5 |
-| **Jellyfin** | Media Server | 192.168.1.224:8096 | 3x USB3 HDDs (Movies, Series, Music, Backup) | rpi5 (direct USB) |
+| **Jellyfin 10.10.3** | Media Server | 192.168.1.224:8096 | 3x USB3 HDDs (Movies, Series, Music) | rpi5 (direct USB) |
 | **MQTT** | Message Broker | 192.168.1.222:1883 | IoT communication | Any node |
 | **Portainer** | Management UI | 192.168.1.227:9443 | Kubernetes Web UI | Any node |
 | **Prometheus** | Monitoring | Internal | Metrics collection & storage | rpi5 (high-memory) |
@@ -138,23 +138,78 @@ kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:909
 # http://localhost:9090
 ```
 
+### Monitoring Health Checks
+```bash
+# Check Prometheus disk usage
+kubectl exec -n monitoring prometheus-kube-prometheus-stack-prometheus-0 -c prometheus -- df -h /prometheus
+
+# Check all targets
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
+# Visit http://localhost:9090/targets
+```
+
 ---
 
-## 📡 Network Migration Notes
+## 💾 Storage Architecture
 
-**Cluster migrated from WLAN to Ethernet (Dec 1, 2025)**
+### Longhorn Configuration (Optimized January 2026)
 
-Changes:
-- All Pis connected via Ethernet cables (Keller)
-- WLAN disabled on all Pis
-- K3s flannel interface changed from `wlan0` to `eth0`
-- All services running stable on wired network
+**Settings for 3-Node Raspberry Pi Cluster:**
+| Setting | Value | Reason |
+|---------|-------|--------|
+| `replica-soft-anti-affinity` | `true` | Allows replicas on same node when necessary |
+| `default-replica-count` | `2` | Optimal for 3-node cluster (was 3) |
+| `replica-auto-balance` | `best-effort` | Automatic replica distribution |
+| `storage-over-provisioning-percentage` | `100` | Allow 2x overprovisioning |
+| `storage-minimal-available-percentage` | `25` | Reserve 25% disk space |
 
-Performance improvements:
-- Lower latency
-- More stable connections  
-- Better throughput for Longhorn storage
-- No WiFi interference
+**Storage Classes:**
+| Class | Replicas | Use Case |
+|-------|----------|----------|
+| `longhorn` | 3 | Default (legacy) |
+| `longhorn-fast` | 2 | NVMe-optimized, recommended |
+| `local-path` | 1 | No replication |
+
+**Physical Hardware:**
+- **rpi5**: 477GB NVMe (System + Longhorn) + 3x USB3 HDDs (1.8TB + 1.8TB + 3.6TB for Media)
+- **rpi4-cm4**: 477GB NVMe (System + Longhorn)
+- **rpi4**: 119GB SSD via USB3 (System + Longhorn)
+
+**Current Volume Status (15 Volumes):**
+| Service | PVC Size | Replicas | Status |
+|---------|----------|----------|--------|
+| Prometheus | 20Gi | 2 | ✅ healthy |
+| Grafana | 5Gi | 2 | ✅ healthy |
+| Alertmanager | 2Gi | 2 | ✅ healthy |
+| Pi-hole (x3) | 2Gi + 1Gi each | 2 | ✅ healthy |
+| Home Assistant | 5Gi | 2 | ✅ healthy |
+| Jellyfin Config | 10Gi | 2 | ✅ healthy |
+| Jellyfin Cache | 10Gi | 2 | ✅ healthy |
+| MQTT | 2Gi | 2 | ✅ healthy |
+| Portainer | 10Gi | 2 | ✅ healthy |
+| Terraria | 5Gi | 2 | ✅ healthy |
+
+**Why 2 Replicas (not 3)?**
+- 3 replicas on 3-node cluster = every node must have a copy
+- If one node is down or disk full → scheduling fails
+- 2 replicas = fault tolerant + flexible scheduling
+- Saves ~33% storage overhead
+
+### Longhorn Maintenance Commands
+```bash
+# Check all volume health
+kubectl get volumes -n longhorn-system -o custom-columns=NAME:.metadata.name,ROBUSTNESS:.status.robustness,REPLICAS:.spec.numberOfReplicas
+
+# Check node disk status
+kubectl get nodes.longhorn.io -n longhorn-system -o custom-columns=NAME:.metadata.name,SCHEDULABLE:.status.diskStatus.*.conditions[0].status
+
+# Check current settings
+kubectl get settings -n longhorn-system replica-soft-anti-affinity -o jsonpath='{.value}'
+kubectl get settings -n longhorn-system default-replica-count -o jsonpath='{.value}'
+
+# Reduce replicas on a volume (if needed)
+kubectl patch volume <pvc-name> -n longhorn-system --type='merge' -p '{"spec":{"numberOfReplicas":2}}'
+```
 
 ---
 
@@ -165,11 +220,19 @@ Performance improvements:
 - ✅ **NO hostNetwork** (clean networking)
 - ✅ **externalTrafficPolicy: Local** (source IP preservation)
 - ✅ **PersistentVolumes** via Longhorn (data persistence)
+- ✅ **Query-Log-Begrenzung**: `MAXDBDAYS=1` (performance)
 
 ### Monitoring
 - ✅ **Node Affinity** - Prometheus on rpi5 (8GB RAM)
 - ✅ **Resource Limits** - Controlled memory usage
-- ✅ **Persistent Storage** - Metrics retained across restarts
+- ✅ **Persistent Storage** - 20Gi for Prometheus (5 day retention)
+- ✅ **WAL Compression** - Reduced disk usage
+
+### Longhorn Storage
+- ✅ **2 Replicas** - Optimal for 3-node cluster
+- ✅ **Soft Anti-Affinity** - Flexible scheduling
+- ✅ **Auto-Balance** - Even distribution
+- ✅ **NVMe Storage Classes** - Performance optimization
 
 ### GitOps
 - ✅ **App-of-Apps Pattern** - Centralized management
@@ -201,16 +264,15 @@ Potential additions:
 - [ ] **Uptime Kuma** - Service uptime monitoring
 - [ ] **ESPHome** - ESP32/ESP8266 firmware management
 - [ ] **Nextcloud** - Private cloud storage
-- [ ] **ADSB Tracker** - Flight tracking
 
 ---
 
 ## 🎉 Current Status: PRODUCTION-READY!
 
 ### Deployed Services:
-- ✅ **Pi-hole v2025**: DNS + Ad-Blocking (Best Practice setup)
+- ✅ **Pi-hole v2025**: DNS + Ad-Blocking (HA StatefulSet)
 - ✅ **Home Assistant v2025**: Smart Home automation
-- ✅ **Jellyfin**: Media Server with 3x USB3 HDDs
+- ✅ **Jellyfin 10.10.3**: Media Server with 3x USB3 HDDs
 - ✅ **MQTT**: IoT Message Broker
 - ✅ **Portainer**: Kubernetes Management UI
 - ✅ **Prometheus + Grafana**: Full monitoring stack
@@ -219,17 +281,15 @@ Potential additions:
 - 🏗️ **3-Node HA Kubernetes Cluster** on Ethernet
 - 🔄 **GitOps** with ArgoCD - All deployments from Git
 - 🤖 **Automated Updates** - Renovate Bot handles dependencies
-- 💾 **Distributed Storage** - Longhorn with 2 replicas
+- 💾 **Distributed Storage** - Longhorn with 2 replicas (optimized)
 - 🌐 **LoadBalancer** - MetalLB for service IPs
 - 📊 **Full Observability** - Prometheus + Grafana monitoring
 - 🛡️ **Fault Tolerant** - Can survive 1 node failure (etcd quorum)
 
-### Memory Distribution (Optimized):
-- **rpi5 (8GB)**: Prometheus (1373Mi) + Jellyfin (575Mi) + Grafana (312Mi) = **70%** usage
-- **rpi4 (4GB)**: Pi-hole (15Mi) + Longhorn + Network services = **72%** usage
-- **rpi4-cm4 (4GB)**: Home Assistant (509Mi) + Terraria (316Mi) + General workloads = **57%** usage
-
-All nodes well balanced! ✅
+### Storage Status:
+- ✅ **15/15 Longhorn volumes healthy**
+- ✅ **All volumes using 2 replicas**
+- ✅ **~15Gi saved** by optimizing replica count
 
 ---
 
@@ -258,117 +318,100 @@ kubectl top nodes
 # - Grafana dashboards for trends
 # - Renovate dependency dashboard
 # - Longhorn volume health
+
+# Storage check:
+kubectl get volumes -n longhorn-system -o custom-columns=NAME:.metadata.name,ROBUSTNESS:.status.robustness
 ```
 
 ---
 
-**Last Updated**: January 03, 2026  
-**Cluster Version**: K3s v1.33.6+k3s1 | Longhorn v1.10.1 | MetalLB v0.15.3  
-**Status**: 🟢 PRODUCTION-READY
+## 🔧 Recent Optimizations
+
+### January 5, 2026: Monitoring & Storage Fix
+
+**Problem:** Grafana showing "No Data"
+
+**Root Causes Identified:**
+1. Prometheus PVC full (10Gi at 100%)
+2. Time drift (~1 hour) on Raspberry Pi nodes
+3. Corrupted WAL data preventing Prometheus startup
+4. Longhorn volumes in degraded state (replica scheduling issues)
+
+**Solutions Applied:**
+
+1. **Prometheus Storage Expansion:**
+   - PVC: 10Gi → 20Gi
+   - Retention: 7d → 5d
+   - RetentionSize: 18GB
+   - WAL Compression: enabled
+
+2. **Time Synchronization:**
+   ```bash
+   # All nodes
+   sudo timedatectl set-ntp true
+   sudo systemctl restart systemd-timesyncd
+   ```
+
+3. **Longhorn Optimization:**
+   - `replica-soft-anti-affinity`: false → true
+   - `default-replica-count`: 3 → 2
+   - Reduced all existing volumes to 2 replicas
+   - Cleaned up stopped/failed replicas
+
+**Results:**
+- ✅ Grafana displays all metrics
+- ✅ 15/15 Longhorn volumes healthy
+- ✅ ~15Gi storage saved
+- ✅ NTP synchronized on all nodes
+
+### December 19, 2025: Pi-hole Performance Tuning
+
+**Problem:** 
+- DNS queries slow (seconds delay)
+- Pi-hole UI save: 10-12 seconds
+
+**Solution:**
+1. `longhorn-fast` StorageClass (2 replicas)
+2. `MAXDBDAYS=1` in pihole-FTL.conf
+3. Fritz!Box DNS-over-TLS upstream
+
+**Results:**
+- UI Save: 10-12s → 3s
+- DNS Cache Hits: 0ms
+- Database: 365k → ~200 rows
 
 ---
 
-## 🔧 Recent Optimizations (December 19, 2025)
+## 🎬 Jellyfin Configuration
 
-### Pi-hole Performance Tuning
-Resolved DNS performance issues and slow UI saves:
-
-**Problem**: 
-- Internetseiten waren sekunden-lang nicht erreichbar
-- Pi-hole UI speichern dauerte 10-12 Sekunden
-- 365.000 Query-Log-Einträge belasteten jeden Neustart
-
-**Lösung**:
-1. **Storage-Optimierung**: Neue `longhorn-fast` StorageClass mit 2 Replicas (statt 3)
-   - 33% weniger Netzwerk-Overhead bei Schreibzugriffen
-   - Konsistente 60 MB/s Write-Performance
-2. **Query-Log-Begrenzung**: `MAXDBDAYS=1` in pihole-FTL.conf
-   - Datenbank bleibt unter 100KB (war >100MB)
-   - Nur noch ~200 Queries im RAM (war 147.000)
-3. **Upstream-DNS optimiert**: Fritz!Box (DNS-over-TLS) mit Google/Cloudflare Fallbacks
-
-**Ergebnis**:
-- ✅ UI Save-Zeit: 10-12s → **3s** (70% Verbesserung)
-- ✅ DNS Cache Hits: **0ms** (vorher "stale answers")
-- ✅ Datenbank: 365k Rows → **~200 Rows** (99.9% Reduktion)
-- ✅ Keine Verbindungsprobleme mehr
-
-**Alle Änderungen sind GitOps-managed** und werden automatisch bei Neudeployments angewendet.
-
-
-### Storage Architecture Details
-
-**Physical Hardware:**
-- **rpi5**: 477GB NVMe (System + Longhorn) + 3x USB3 HDDs (1.8TB + 1.8TB + 3.6TB for Media)
-- **rpi4-cm4**: 477GB NVMe (System + Longhorn)
-- **rpi4**: 119GB SSD via USB3 (System + Longhorn)
-
-**Why V1 Data Engine (not V2/SPDK)?**
-- V2 requires 1 CPU core (100% usage) per node = 25% CPU overhead on 4-core Pis
-- V1 already achieves 60 MB/s write performance with 2 replicas
-- Current workloads are not I/O-intensive enough to justify V2 overhead
-- V2 is designed for high-end servers with 16+ CPU cores and NVMe-only setups
-
-For more details on V2 vs V1, see [Longhorn Performance Benchmark](https://github.com/longhorn/longhorn/wiki/Performance-Benchmark).
-
-## Recent Updates (December 19, 2025)
-
-### Phase 1: Core Infrastructure Upgrades
-- **Longhorn**: v1.10.0 → v1.10.1 (Bugfixes, Security)
-- **MetalLB**: v0.14.9 → v0.15.3 (CVE-2025-22874, FRR 10.4.1)
-- All services validated and operational
-- Zero downtime during upgrades
-
-**K3s Upgrade (January 2025):** v1.30.8 → v1.33.6+k3s1 ✅
-
----
-
-## 🎬 Jellyfin Configuration Notes (December 21, 2025)
-
-### Current Version: 10.10.3 (Stable)
+### Version: 10.10.3 (Stable for ARM64)
 
 **Why not 10.11.x?**
-- Jellyfin 10.11.x has a critical memory leak on ARM64/Raspberry Pi during library scans
-- GitHub Issues: [#15728](https://github.com/jellyfin/jellyfin/issues/15728), [#13165](https://github.com/jellyfin/jellyfin/issues/13165), [#11588](https://github.com/jellyfin/jellyfin/issues/11588)
-- Symptoms: Memory explosion from 500Mi → 4Gi+ in seconds → OOM crash
-- **10.10.3 is the last stable version** for Raspberry Pi setups
+- Critical memory leak on ARM64 during library scans
+- GitHub Issues: #15728, #13165, #11588
+- 10.10.3 is the last stable version for Raspberry Pi
 
-### Optimizations Applied
+### Optimizations
 ```yaml
-Image: jellyfin/jellyfin:10.10.3
-Memory Limits: 4Gi limit / 2Gi request
-Environment Variables:
-  - JELLYFIN_parallel_scan_tasks: "1"           # Limit concurrent file scanning
-  - JELLYFIN_FFmpeg__probesize: "50000000"      # 50M (reduced from 200M default)
-  - JELLYFIN_FFmpeg__analyzeduration: "50000000" # 50M (reduced from 200M default)
-  - MALLOC_TRIM_THRESHOLD_: "100000"            # Better glibc heap management
+Environment:
+  JELLYFIN_parallel_scan_tasks: "1"
+  JELLYFIN_FFmpeg__probesize: "50000000"
+  JELLYFIN_FFmpeg__analyzeduration: "50000000"
+  MALLOC_TRIM_THRESHOLD_: "100000"
 ```
-
-### Library Configuration (NFO-Only)
-- **Metadata Downloaders**: ALL disabled (TMDb, OMDb, etc.)
-- **Metadata Readers**: ONLY "Nfo" enabled
-- **Download Images**: Disabled
-- **Reason**: Reduces memory usage and API calls during scans
-
-### Performance Results
-- ✅ **~327+ Movies scanned successfully** (3x USB3 HDDs)
-- ✅ **Memory stable at ~600Mi** (previously crashed at 4Gi)
-- ✅ **No OOM kills** during library scans
-- ✅ **TV Shows & Music libraries working**
 
 ### Storage Layout
 ```
-/media/movies-backup-hdd   → /mnt/media/backup/Filme    (USB HDD 1 - Backup)
-/media/movies-nas          → /mnt/media/movies/Filme    (USB HDD 2 - Movies)
-/media/series-nas          → /mnt/media/movies/Serien   (USB HDD 2 - Series)
-/media/music              → /mnt/media/series/Musik    (USB HDD 3 - Music)
-+ backup directories for redundancy
+/media/movies-nas     → /mnt/media/movies/Filme
+/media/series-nas     → /mnt/media/movies/Serien
+/media/music          → /mnt/media/series/Musik
+/media/backup         → /mnt/media/backup
 ```
 
-### Migration Path to 10.11.x (Future)
-Monitor these GitHub issues for memory leak fixes:
-- Watch for 10.11.6+ release notes
-- Test in staging before upgrading
-- Database from 10.10.3 should be compatible
+See [JELLYFIN_SETUP.md](./JELLYFIN_SETUP.md) for details.
 
-For detailed setup notes, see: [JELLYFIN_SETUP.md](./JELLYFIN_SETUP.md)
+---
+
+**Last Updated**: January 5, 2026  
+**Cluster Version**: K3s v1.33.6+k3s1 | Longhorn v1.10.1 | MetalLB v0.15.3  
+**Status**: 🟢 PRODUCTION-READY
