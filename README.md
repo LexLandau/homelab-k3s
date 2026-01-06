@@ -32,6 +32,7 @@ Alle Nodes sind Control Plane + Worker (keine Taints)
 | **Prometheus** | Monitoring | Internal | Metrics collection & storage | rpi5 (high-memory) |
 | **Grafana** | Dashboards | 192.168.1.228 | Monitoring dashboards | rpi5 (high-memory) |
 | **ArgoCD** | GitOps | Port-Forward 8080 | Continuous deployment | Any node |
+| **Uptime Kuma** | Monitoring | 192.168.1.229:80 | Service uptime monitoring | Any node |
 
 ---
 
@@ -261,7 +262,7 @@ Potential additions:
 - [ ] **Traefik** - Reverse proxy with automatic HTTPS
 - [ ] **Cert-Manager** - Automatic SSL certificates
 - [ ] **Velero** - Kubernetes backup solution
-- [ ] **Uptime Kuma** - Service uptime monitoring
+- [x] **Uptime Kuma** - Service uptime monitoring
 - [ ] **ESPHome** - ESP32/ESP8266 firmware management
 - [ ] **Nextcloud** - Private cloud storage
 
@@ -412,6 +413,6 @@ See [JELLYFIN_SETUP.md](./JELLYFIN_SETUP.md) for details.
 
 ---
 
-**Last Updated**: January 5, 2026  
+**Last Updated**: January 6, 2026
 **Cluster Version**: K3s v1.33.6+k3s1 | Longhorn v1.10.1 | MetalLB v0.15.3  
 **Status**: 🟢 PRODUCTION-READY
