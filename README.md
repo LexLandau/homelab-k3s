@@ -116,3 +116,4 @@ Stored in 1Password, created manually as Kubernetes secrets. Includes Pi-hole ad
 ---
 
 Last updated: January 2026
+
