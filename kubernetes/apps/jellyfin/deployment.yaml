@@ -45,33 +45,30 @@ spec:
           mountPath: /config
         - name: cache
           mountPath: /cache
-        - name: movies-backup
-          mountPath: /media/movies-backup
+        # MOVIES HDD (EXT4)
+        - name: movies-filme
+          mountPath: /media/movies-hdd/Filme
           readOnly: true
-        - name: movies-nas
-          mountPath: /media/movies-nas
+        - name: movies-serien
+          mountPath: /media/movies-hdd/Serien
           readOnly: true
-        - name: series-backup
-          mountPath: /media/series-backup
+        # SERIES HDD (EXT4)
+        - name: series-filme
+          mountPath: /media/series-hdd/Filme
           readOnly: true
-        - name: series-nas
-          mountPath: /media/series-nas
+        - name: series-serien
+          mountPath: /media/series-hdd/Serien
           readOnly: true
-        - name: music
-          mountPath: /media/music
+        - name: series-musik
+          mountPath: /media/series-hdd/Musik
           readOnly: true
-        - name: backup
-          mountPath: /media/backup
-          readOnly: false
-        - name: movies-backup-hdd
-          mountPath: /media/movies-backup-hdd
-          readOnly: false
-        - name: series-backup-hdd
-          mountPath: /media/series-backup-hdd
-          readOnly: false
-        - name: music-backup-hdd
-          mountPath: /media/music-backup-hdd
-          readOnly: false
+        # BACKUP HDD (EXT4)
+        - name: backup-filme
+          mountPath: /media/backup-hdd/Filme
+          readOnly: true
+        - name: backup-serien
+          mountPath: /media/backup-hdd/Serien
+          readOnly: true
         resources:
           requests:
             memory: "2Gi"
@@ -98,39 +95,34 @@ spec:
       - name: cache
         persistentVolumeClaim:
           claimName: jellyfin-cache-nvme
-      - name: movies-backup
-        hostPath:
-          path: /mnt/media/series/filme
-          type: Directory
-      - name: movies-nas
+      # MOVIES HDD
+      - name: movies-filme
         hostPath:
           path: /mnt/media/movies/Filme
           type: Directory
-      - name: series-backup
-        hostPath:
-          path: /mnt/media/series/serien
-          type: Directory
-      - name: series-nas
+      - name: movies-serien
         hostPath:
           path: /mnt/media/movies/Serien
           type: Directory
-      - name: music
+      # SERIES HDD
+      - name: series-filme
+        hostPath:
+          path: /mnt/media/series/filme
+          type: Directory
+      - name: series-serien
+        hostPath:
+          path: /mnt/media/series/serien
+          type: Directory
+      - name: series-musik
         hostPath:
           path: /mnt/media/series/Musik
           type: Directory
-      - name: backup
-        hostPath:
-          path: /mnt/media/backup
-          type: Directory
-      - name: movies-backup-hdd
+      # BACKUP HDD
+      - name: backup-filme
         hostPath:
           path: /mnt/media/backup/Filme
           type: Directory
-      - name: series-backup-hdd
+      - name: backup-serien
         hostPath:
           path: /mnt/media/backup/Serien
-          type: Directory
-      - name: music-backup-hdd
-        hostPath:
-          path: /mnt/media/backup/Musik
           type: Directory
