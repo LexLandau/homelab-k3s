@@ -1,3 +1,4 @@
+# kubernetes/core/pihole/statefulset.yaml - MINIMAL, FUNKTIONIEREND
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -14,7 +15,6 @@ spec:
       labels:
         app: pihole
     spec:
-      # Verteile Pods auf verschiedene Nodes für echte HA
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -22,22 +22,24 @@ spec:
                 matchLabels:
                   app: pihole
               topologyKey: kubernetes.io/hostname
+      
       securityContext:
         fsGroup: 999
+      
       dnsPolicy: None
       dnsConfig:
         nameservers:
           - 192.168.1.1
           - 8.8.8.8
+          - 1.1.1.1
+      
       initContainers:
         - name: fix-permissions
           image: busybox:latest
           command:
             - sh
             - -c
-            - |
-              chown -R 999:999 /etc/pihole /etc/dnsmasq.d
-              chmod -R 755 /etc/pihole /etc/dnsmasq.d
+            - chown -R 999:999 /etc/pihole /etc/dnsmasq.d && chmod -R 755 /etc/pihole /etc/dnsmasq.d
           securityContext:
             runAsUser: 0
           volumeMounts:
@@ -45,9 +47,12 @@ spec:
               mountPath: /etc/pihole
             - name: dnsmasq
               mountPath: /etc/dnsmasq.d
+
       containers:
         - name: pihole
           image: pihole/pihole:2025.11.1
+          imagePullPolicy: IfNotPresent
+          
           ports:
             - containerPort: 53
               name: dns-tcp
@@ -58,6 +63,7 @@ spec:
             - containerPort: 80
               name: http
               protocol: TCP
+          
           env:
             - name: TZ
               value: "Europe/Berlin"
@@ -70,6 +76,7 @@ spec:
                   key: password
             - name: FTLCONF_dns_listeningMode
               value: "all"
+          
           volumeMounts:
             - name: config
               mountPath: /etc/pihole
@@ -78,37 +85,45 @@ spec:
             - name: ftl-config
               mountPath: /etc/pihole/pihole-FTL.conf
               subPath: pihole-FTL.conf
+          
           securityContext:
             capabilities:
               add:
                 - NET_ADMIN
+                - SYS_NICE
+                - SYS_TIME
+            allowPrivilegeEscalation: false
+          
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "50m"
+              memory: "256Mi"
+              cpu: "150m"
             limits:
-              memory: "512Mi"
-              cpu: "200m"
-          # Readiness auf DNS statt Web - erkennt FTL-Probleme schneller
+              memory: "768Mi"
+              cpu: "600m"
+          
           readinessProbe:
             tcpSocket:
               port: 53
-            initialDelaySeconds: 30
+            initialDelaySeconds: 20
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
+          
           livenessProbe:
             httpGet:
               path: /admin/
               port: 80
             initialDelaySeconds: 90
-            periodSeconds: 60
+            periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 10
+            failureThreshold: 5
+
       volumes:
         - name: ftl-config
           configMap:
             name: pihole-ftl-config
+
   volumeClaimTemplates:
     - metadata:
         name: config
@@ -117,7 +132,8 @@ spec:
         storageClassName: longhorn-fast
         resources:
           requests:
-            storage: 2Gi
+            storage: 5Gi
+    
     - metadata:
         name: dnsmasq
       spec:
@@ -125,4 +141,4 @@ spec:
         storageClassName: longhorn-fast
         resources:
           requests:
-            storage: 1Gi
+            storage: 2Gi

@@ -1,13 +1,3 @@
-# Secret muss manuell erstellt werden:
-# kubectl create secret generic nebula-sync-env -n pihole \
-#   --from-literal=PRIMARY="http://pihole-0.pihole-headless.pihole.svc.cluster.local|DEIN_PASSWORT" \
-#   --from-literal=REPLICAS="http://pihole-1.pihole-headless.pihole.svc.cluster.local|DEIN_PASSWORT"
-#
-# Oder aus 1Password:
-# kubectl create secret generic nebula-sync-env -n pihole \
-#   --from-literal=PRIMARY="http://pihole-0.pihole-headless.pihole.svc.cluster.local|$(op item get 'Pi-hole Admin' --fields password)" \
-#   --from-literal=REPLICAS="http://pihole-1.pihole-headless.pihole.svc.cluster.local|$(op item get 'Pi-hole Admin' --fields password)"
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -28,9 +18,20 @@ spec:
       containers:
       - name: nebula-sync
         image: ghcr.io/lovelaze/nebula-sync:latest
+        
+        startupProbe:
+          httpGet:
+            path: /api/auth
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          failureThreshold: 12
+        
         envFrom:
         - secretRef:
             name: nebula-sync-env
+        
         env:
         - name: CRON
           value: "*/5 * * * *"
@@ -42,6 +43,7 @@ spec:
           value: "SELECTIVE"
         - name: SELECTIVE_SYNC
           value: "adlist,domainlist,client"
+        
         resources:
           requests:
             memory: "64Mi"
@@ -49,6 +51,7 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "100m"
+      
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
