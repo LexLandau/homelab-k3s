@@ -1,0 +1,301 @@
+---
+# Pi-hole Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pihole
+---
+# Pi-hole Admin Password Secret
+# kubectl create secret generic pihole-password --from-literal=password='DEIN_PASSWORT' -n pihole
+---
+# Pi-hole FTL Config (Performance-optimiert)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-ftl-config
+  namespace: pihole
+data:
+  pihole-FTL.conf: |
+    MAXDBDAYS=1
+    DBINTERVAL=30.0
+---
+# Nebula-Sync Secret
+# kubectl create secret generic nebula-sync-env -n pihole \
+#   --from-literal=PRIMARY="http://pihole-0.pihole-headless.pihole.svc.cluster.local|ADMIN_PASSWORD" \
+#   --from-literal=REPLICAS="http://pihole-1.pihole-headless.pihole.svc.cluster.local|ADMIN_PASSWORD,http://pihole-2.pihole-headless.pihole.svc.cluster.local|ADMIN_PASSWORD"
+---
+# Pi-hole StatefulSet (3 Replicas)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pihole
+  namespace: pihole
+spec:
+  serviceName: pihole-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pihole
+  template:
+    metadata:
+      labels:
+        app: pihole
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: pihole
+              topologyKey: kubernetes.io/hostname
+      
+      securityContext:
+        fsGroup: 999
+      
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 192.168.1.1
+          - 8.8.8.8
+          - 1.1.1.1
+      
+      initContainers:
+        - name: fix-permissions
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - chown -R 999:999 /etc/pihole /etc/dnsmasq.d && chmod -R 755 /etc/pihole /etc/dnsmasq.d
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pihole
+            - name: dnsmasq
+              mountPath: /etc/dnsmasq.d
+
+      containers:
+        - name: pihole
+          image: pihole/pihole:2025.11.1
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - containerPort: 53
+              name: dns-tcp
+              protocol: TCP
+            - containerPort: 53
+              name: dns-udp
+              protocol: UDP
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          
+          env:
+            - name: TZ
+              value: "Europe/Berlin"
+            - name: PIHOLE_DNS_
+              value: "192.168.1.1;8.8.8.8;1.1.1.1"
+            - name: FTLCONF_webserver_api_password
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-password
+                  key: password
+            - name: FTLCONF_dns_listeningMode
+              value: "all"
+          
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pihole
+            - name: dnsmasq
+              mountPath: /etc/dnsmasq.d
+            - name: ftl-config
+              mountPath: /etc/pihole/pihole-FTL.conf
+              subPath: pihole-FTL.conf
+          
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_NICE
+                - SYS_TIME
+            allowPrivilegeEscalation: false
+          
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "150m"
+            limits:
+              memory: "768Mi"
+              cpu: "600m"
+          
+          readinessProbe:
+            tcpSocket:
+              port: 53
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          livenessProbe:
+            httpGet:
+              path: /admin/
+              port: 80
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+
+      volumes:
+        - name: ftl-config
+          configMap:
+            name: pihole-ftl-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-fast
+        resources:
+          requests:
+            storage: 5Gi
+    
+    - metadata:
+        name: dnsmasq
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-fast
+        resources:
+          requests:
+            storage: 2Gi
+---
+# Headless Service (StatefulSet DNS)
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-headless
+  namespace: pihole
+spec:
+  clusterIP: None
+  selector:
+    app: pihole
+  ports:
+    - port: 53
+      targetPort: 53
+      protocol: TCP
+      name: dns-tcp
+    - port: 53
+      targetPort: 53
+      protocol: UDP
+      name: dns-udp
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+---
+# DNS LoadBalancer (HA - alle 3 Pods, externalTrafficPolicy: Local für Client IPs)
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-dns
+  namespace: pihole
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.225
+  externalTrafficPolicy: Local  # WICHTIG für Client-IP-Erhaltung!
+  selector:
+    app: pihole
+  ports:
+    - port: 53
+      targetPort: 53
+      protocol: TCP
+      name: dns-tcp
+    - port: 53
+      targetPort: 53
+      protocol: UDP
+      name: dns-udp
+---
+# Web Admin LoadBalancer (nur pihole-0 für Config-Änderungen)
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-web
+  namespace: pihole
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.220
+  externalTrafficPolicy: Cluster
+  selector:
+    app: pihole
+    statefulset.kubernetes.io/pod-name: pihole-0
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+---
+# Nebula-Sync Deployment (Primary → Replicas Sync)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nebula-sync
+  namespace: pihole
+  labels:
+    app: nebula-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nebula-sync
+  template:
+    metadata:
+      labels:
+        app: nebula-sync
+    spec:
+      containers:
+      - name: nebula-sync
+        image: ghcr.io/lovelaze/nebula-sync:latest
+        
+        startupProbe:
+          httpGet:
+            path: /api/auth
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          failureThreshold: 12
+        
+        envFrom:
+        - secretRef:
+            name: nebula-sync-env
+        
+        env:
+        - name: CRON
+          value: "*/5 * * * *"  # Alle 5 Minuten
+        - name: FULL_SYNC
+          value: "false"
+        - name: RUN_GRAVITY
+          value: "true"  # Wichtig für Adlist-Updates
+        - name: SYNC_MODE
+          value: "SELECTIVE"
+        - name: SELECTIVE_SYNC
+          value: "adlist,domainlist,client"
+        
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - rpi4-cm4
