@@ -80,3 +80,78 @@ This prevents SQLite locking issues.
 - Pi-hole: 2025.11.1
 - Nebula-Sync: latest
 - Storage: longhorn-fast (2 replicas)
+
+## Troubleshooting
+
+### nebula-sync fails with "sync teleporters: unexpected status code: 400"
+
+**Ursache:** Korrupte Gravity-Datenbank auf Replica.
+
+**Lösung:**
+```bash
+kubectl exec -n pihole pihole-1 -- pihole -g
+kubectl exec -n pihole pihole-2 -- pihole -g
+kubectl delete pod -n pihole -l app=nebula-sync
+```
+
+### "authenticate: unexpected status code: 401"
+
+**Ursache:** Falsches Passwort oder App Password verwendet.
+
+**Lösung:** Verwende das Admin-Passwort (nicht App Password):
+```bash
+kubectl get secret pihole-password -n pihole -o jsonpath='{.data.password}' | base64 -d
+```
+
+## Troubleshooting
+
+### nebula-sync fails with "sync teleporters: unexpected status code: 400"
+
+**Cause:** Corrupted Gravity database on replica.
+
+**Solution:**
+```bash
+# Rebuild Gravity on affected replica
+kubectl exec -n pihole pihole-1 -- pihole -g
+kubectl exec -n pihole pihole-2 -- pihole -g
+
+# Restart nebula-sync
+kubectl delete pod -n pihole -l app=nebula-sync
+kubectl logs -n pihole -l app=nebula-sync -f
+```
+
+### "authenticate: unexpected status code: 401"
+
+**Cause:** Wrong password or App Password used instead of Admin password.
+
+**Solution:** Use the admin password (NOT an App Password):
+```bash
+# Get the admin password
+kubectl get secret pihole-password -n pihole -o jsonpath='{.data.password}' | base64 -d
+
+# Update nebula-sync secret
+ADMIN_PW=$(kubectl get secret pihole-password -n pihole -o jsonpath='{.data.password}' | base64 -d)
+kubectl delete secret nebula-sync-env -n pihole
+kubectl create secret generic nebula-sync-env -n pihole \
+  --from-literal=PRIMARY="http://pihole-0.pihole-headless.pihole.svc.cluster.local|${ADMIN_PW}" \
+  --from-literal=REPLICAS="http://pihole-1.pihole-headless.pihole.svc.cluster.local|${ADMIN_PW},http://pihole-2.pihole-headless.pihole.svc.cluster.local|${ADMIN_PW}"
+```
+
+### Verify sync is working
+```bash
+# Check logs
+kubectl logs -n pihole -l app=nebula-sync --tail=20
+
+# Expected output:
+# INF Starting nebula-sync v0.11.1
+# INF Running sync mode=selective replicas=2
+# INF Authenticating clients...
+# INF Syncing teleporters...
+# INF Syncing configs...
+# INF Running gravity...
+# INF Invalidating sessions...
+# INF Sync completed
+
+# Manual sync trigger
+kubectl delete pod -n pihole -l app=nebula-sync
+```
