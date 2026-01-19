@@ -416,3 +416,20 @@ See [JELLYFIN_SETUP.md](./JELLYFIN_SETUP.md) for details.
 **Last Updated**: January 6, 2026
 **Cluster Version**: K3s v1.33.6+k3s1 | Longhorn v1.10.1 | MetalLB v0.15.3  
 **Status**: 🟢 PRODUCTION-READY
+
+## 🥧 Pi-hole HA (Updated Jan 19, 2026)
+
+**3-Replica High Availability:**
+- pihole-0, pihole-1, pihole-2 (auf allen Nodes verteilt)
+- DNS: 192.168.1.225 (LoadBalancer, HA)
+- Web Admin: 192.168.1.220 (pihole-0 nur)
+
+**Client-IP Logging aktiviert:**
+- `externalTrafficPolicy: Local` auf pihole-dns Service
+- Echte Client-IPs erscheinen im Query Log
+
+**Nebula-Sync:**
+- Sync alle 5 Minuten von Primary → Replicas
+- Synced: Adlists, Domain-Listen, Clients
+- Konfiguration nur über pihole-0 ändern!
+
