@@ -8,9 +8,9 @@
 # - Nebula-Sync für Config-Synchronisation
 #
 # Usage:
-# - DNS: 192.168.1.10, .11, .12 (Port 53)
-# - Web Admin: http://192.168.1.10/admin (oder .11, .12, .220)
-# - Konfiguration nur auf Primary (192.168.1.10) ändern
+# - DNS: pihole-0.pihole-headless.pihole.svc.cluster.local, .11, .12 (Port 53)
+# - Web Admin: http://pihole-0.pihole-headless.pihole.svc.cluster.local/admin (oder .11, .12, .220)
+# - Konfiguration nur auf Primary (pihole-0.pihole-headless.pihole.svc.cluster.local) ändern
 # - Nebula-Sync synchronisiert alle 5 Min
 
 ---

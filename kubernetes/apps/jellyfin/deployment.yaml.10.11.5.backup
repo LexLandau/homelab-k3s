@@ -31,7 +31,7 @@ spec:
         - name: TZ
           value: "Europe/Berlin"
         - name: JELLYFIN_PublishedServerUrl
-          value: "http://192.168.1.10:8096"
+          value: "http://pihole-0.pihole-headless.pihole.svc.cluster.local:8096"
         - name: MALLOC_TRIM_THRESHOLD_
           value: "100000"
         - name: JELLYFIN_parallel_scan_tasks

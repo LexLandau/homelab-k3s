@@ -6,20 +6,20 @@
 - **Nebula-Sync** für automatische Konfigurationssynchronisation
 
 ## DNS Server
-- **Primary**: 192.168.1.10 (rpi5)
-- **Secondary**: 192.168.1.11 (rpi4-cm4)
-- **Tertiary**: 192.168.1.12 (rpi4)
+- **Primary**: pihole-0.pihole-headless.pihole.svc.cluster.local (rpi5)
+- **Secondary**: pihole-1.pihole-headless.pihole.svc.cluster.local (rpi4-cm4)
+- **Tertiary**: pihole-2.pihole-headless.pihole.svc.cluster.local (rpi4)
 
 ## Web Admin
-- http://192.168.1.10/admin (Primary - für Config-Änderungen)
-- http://192.168.1.11/admin (Read-only)
-- http://192.168.1.12/admin (Read-only)
+- http://pihole-0.pihole-headless.pihole.svc.cluster.local/admin (Primary - für Config-Änderungen)
+- http://pihole-1.pihole-headless.pihole.svc.cluster.local/admin (Read-only)
+- http://pihole-2.pihole-headless.pihole.svc.cluster.local/admin (Read-only)
 - http://192.168.1.220/admin (LoadBalancer - jeder Node)
 
 ## Fritz!Box Konfiguration
 1. Öffne: http://192.168.1.1
 2. Heimnetz → Netzwerk → Netzwerkeinstellungen
-3. Lokaler DNS-Server: **192.168.1.10**
+3. Lokaler DNS-Server: **pihole-0.pihole-headless.pihole.svc.cluster.local**
 4. Übernehmen
 
 ## Deployment
@@ -34,8 +34,8 @@ kubectl create secret generic pihole-password \
 # Nebula-Sync Secret
 ADMIN_PW='DEIN_PASSWORT'
 kubectl create secret generic nebula-sync-env -n pihole \
-  --from-literal=PRIMARY="http://192.168.1.10|${ADMIN_PW}" \
-  --from-literal=REPLICAS="http://192.168.1.11|${ADMIN_PW},http://192.168.1.12|${ADMIN_PW}"
+  --from-literal=PRIMARY="http://pihole-0.pihole-headless.pihole.svc.cluster.local|${ADMIN_PW}" \
+  --from-literal=REPLICAS="http://pihole-1.pihole-headless.pihole.svc.cluster.local|${ADMIN_PW},http://pihole-2.pihole-headless.pihole.svc.cluster.local|${ADMIN_PW}"
 ```
 
 ### Deployen
@@ -46,7 +46,7 @@ kubectl apply -f pihole-ha-daemonset.yaml
 ## Wartung
 
 ### Konfiguration ändern
-**WICHTIG:** Nur auf Primary (192.168.1.10) ändern!
+**WICHTIG:** Nur auf Primary (pihole-0.pihole-headless.pihole.svc.cluster.local) ändern!
 Nebula-Sync synchronisiert automatisch alle 5 Minuten.
 
 ### Manueller Sync
