@@ -7,9 +7,9 @@ data:
   pihole-optimization.server: |
     rpi5:53 rpi4:53 rpi4-cm4:53 {
       hosts {
-        192.168.1.10 rpi5
-        192.168.1.11 rpi4-cm4
-        192.168.1.12 rpi4
+        pihole-0.pihole-headless.pihole.svc.cluster.local rpi5
+        pihole-1.pihole-headless.pihole.svc.cluster.local rpi4-cm4
+        pihole-2.pihole-headless.pihole.svc.cluster.local rpi4
         fallthrough
       }
       cache 3600

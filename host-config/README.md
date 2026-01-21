@@ -37,7 +37,7 @@ sudo cp rpi5/99-readahead.rules /etc/udev/rules.d/
 
 ### Network
 
-- eth0 (192.168.1.10) - 1GbE onboard - K3s cluster
+- eth0 (pihole-0.pihole-headless.pihole.svc.cluster.local) - 1GbE onboard - K3s cluster
 - eth1 (192.168.1.15) - 2.5GbE USB adapter - SMB traffic
 
 ### Windows Tip
