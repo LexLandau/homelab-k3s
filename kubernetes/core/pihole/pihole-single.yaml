@@ -1,11 +1,56 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pihole
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-ftl-config
+  namespace: pihole
+data:
+  pihole-FTL.conf: |
+    MAXDBDAYS=1
+    DBINTERVAL=30.0
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pihole-config
+  namespace: pihole
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-fast
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pihole-dnsmasq
+  namespace: pihole
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-fast
+  resources:
+    requests:
+      storage: 2Gi
+---
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: pihole
   namespace: pihole
   labels:
     app: pihole
 spec:
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: pihole
@@ -14,7 +59,8 @@ spec:
       labels:
         app: pihole
     spec:
-      hostNetwork: false
+      nodeSelector:
+        kubernetes.io/hostname: rpi5
       
       securityContext:
         fsGroup: 999
@@ -23,8 +69,8 @@ spec:
       dnsConfig:
         nameservers:
           - 192.168.1.1
-          - 8.8.8.8
           - 1.1.1.1
+          - 8.8.8.8
       
       initContainers:
         - name: fix-permissions
@@ -32,7 +78,9 @@ spec:
           command:
             - sh
             - -c
-            - chown -R 999:999 /etc/pihole /etc/dnsmasq.d && chmod -R 755 /etc/pihole /etc/dnsmasq.d
+            - |
+              chown -R 999:999 /etc/pihole /etc/dnsmasq.d
+              chmod -R 755 /etc/pihole /etc/dnsmasq.d
           securityContext:
             runAsUser: 0
           volumeMounts:
@@ -61,7 +109,7 @@ spec:
             - name: TZ
               value: "Europe/Berlin"
             - name: PIHOLE_DNS_
-              value: "192.168.1.1;1.1.1.1;1.0.0.1;2606:4700:4700::1111;2606:4700:4700::1001;2620:fe::9;149.112.112.112;9.9.9.9"
+              value: "192.168.1.1;1.1.1.1;8.8.8.8"
             - name: FTLCONF_webserver_api_password
               valueFrom:
                 secretKeyRef:
@@ -69,10 +117,8 @@ spec:
                   key: password
             - name: FTLCONF_dns_listeningMode
               value: "all"
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
+            - name: FTLCONF_dns_port
+              value: "53"
           
           volumeMounts:
             - name: config
@@ -94,15 +140,15 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "150m"
+              cpu: "250m"
             limits:
-              memory: "768Mi"
-              cpu: "600m"
+              memory: "1Gi"
+              cpu: "1000m"
           
           readinessProbe:
             tcpSocket:
               port: 53
-            initialDelaySeconds: 20
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
@@ -121,10 +167,45 @@ spec:
           configMap:
             name: pihole-ftl-config
         - name: config
-          hostPath:
-            path: /var/lib/pihole/config
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: pihole-config
         - name: dnsmasq
-          hostPath:
-            path: /var/lib/pihole/dnsmasq.d
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: pihole-dnsmasq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-dns
+  namespace: pihole
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.225
+  externalTrafficPolicy: Local
+  selector:
+    app: pihole
+  ports:
+    - port: 53
+      targetPort: 53
+      protocol: TCP
+      name: dns-tcp
+    - port: 53
+      targetPort: 53
+      protocol: UDP
+      name: dns-udp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-web
+  namespace: pihole
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.220
+  selector:
+    app: pihole
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
