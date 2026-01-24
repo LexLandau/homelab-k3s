@@ -28,3 +28,4 @@ kubeconfig*
 *.swp
 *~
 ansible/.k3s-token
+pihole-password.txt
