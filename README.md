@@ -433,3 +433,30 @@ See [JELLYFIN_SETUP.md](./JELLYFIN_SETUP.md) for details.
 - Synced: Adlists, Domain-Listen, Clients
 - Konfiguration nur über pihole-0 ändern!
 
+
+## 🥧 Pi-hole Configuration (Updated Jan 24, 2026)
+
+**Single Instance on rpi5:**
+- **Deployment**: 1 replica on rpi5 (Kubernetes Deployment, Recreate strategy)
+- **DNS**: 192.168.1.225 (UDP+TCP, externalTrafficPolicy: Local)
+- **Web Admin**: http://192.168.1.220
+- **Storage**: Longhorn (longhorn-fast, 2 replicas)
+  - Config: 5Gi PVC
+  - Dnsmasq: 2Gi PVC
+- **Upstream DNS**: Fritz!Box (192.168.1.1) → Cloudflare (1.1.1.1) → Google (8.8.8.8)
+
+**Fritz!Box Integration:**
+- Fritz!Box DHCP: Verteilt DNS-Server 192.168.1.225 an alle Clients
+- Fritz!Box DNS-Relay: Leitet alle DNS-Anfragen an Pi-hole weiter
+- **Conditional Forwarding**: Pi-hole macht rDNS Lookup bei Fritz!Box für Client-Namen
+
+**Client-Name Resolution:**
+- Pi-hole sieht: `192.168.1.1` (Fritz!Box) als Source-IP
+- Conditional Forwarding fragt Fritz!Box: "Welcher Hostname?"
+- Query Log zeigt: **"alexs-laptop (192.168.1.1)"**
+
+**Performance Optimizations:**
+- `MAXDBDAYS=1` (Query Log: nur 1 Tag)
+- `DBINTERVAL=30.0` (DB Write: alle 30 Sekunden)
+- NVMe Storage (rpi5) für schnelle FTL-Datenbank
+
