@@ -4236,7 +4236,7 @@ spec:
     spec:
       containers:
       - name: longhorn-manager
-        image: longhornio/longhorn-manager:v1.10.1
+        image: longhornio/longhorn-manager:v1.11.0
         imagePullPolicy: IfNotPresent
         securityContext:
           privileged: true
@@ -4360,11 +4360,11 @@ spec:
     spec:
       initContainers:
         - name: wait-longhorn-manager
-          image: longhornio/longhorn-manager:v1.10.1
+          image: longhornio/longhorn-manager:v1.11.0
           command: ['sh', '-c', 'while [ $(curl -m 1 -s -o /dev/null -w "%{http_code}" http://longhorn-backend:9500/v1) != "200" ]; do echo waiting; sleep 2; done']
       containers:
         - name: longhorn-driver-deployer
-          image: longhornio/longhorn-manager:v1.10.1
+          image: longhornio/longhorn-manager:v1.11.0
           imagePullPolicy: IfNotPresent
           command:
           - longhorn-manager
