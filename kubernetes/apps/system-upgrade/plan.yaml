@@ -1,0 +1,41 @@
+apiVersion: upgrade.cattle.io/v1
+kind: Plan
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"upgrade.cattle.io/v1","kind":"Plan","metadata":{"annotations":{},"name":"k3s-server","namespace":"system-upgrade"},"spec":{"channel":"https://update.k3s.io/v1-release/channels/stable","concurrency":1,"cordon":true,"nodeSelector":{"matchExpressions":[{"key":"node-role.kubernetes.io/control-plane","operator":"Exists"}]},"serviceAccountName":"system-upgrade","upgrade":{"image":"rancher/k3s-upgrade"}}}
+  creationTimestamp: "2026-02-17T19:52:01Z"
+  generation: 1
+  name: k3s-server
+  namespace: system-upgrade
+  resourceVersion: "30749872"
+  uid: 6e0c831b-a9ae-4ff2-bf2e-9f0c78754035
+spec:
+  channel: https://update.k3s.io/v1-release/channels/stable
+  concurrency: 1
+  cordon: true
+  nodeSelector:
+    matchExpressions:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+  serviceAccountName: system-upgrade
+  upgrade:
+    image: rancher/k3s-upgrade
+status:
+  applying:
+  - rpi4
+  conditions:
+  - lastUpdateTime: "2026-02-17T19:52:02Z"
+    reason: SyncJob
+    status: "False"
+    type: Complete
+  - lastUpdateTime: "2026-02-17T19:52:01Z"
+    reason: PlanIsValid
+    status: "True"
+    type: Validated
+  - lastUpdateTime: "2026-02-17T19:52:02Z"
+    reason: Channel
+    status: "True"
+    type: LatestResolved
+  latestHash: c9324b2b5bc5b170499aebf7523baa52a52af4e94aadb75bc63d7cd5
+  latestVersion: v1.34.4-k3s1
