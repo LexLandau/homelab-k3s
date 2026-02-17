@@ -1,0 +1,148 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: jellyfin-backup
+  namespace: jellyfin
+spec:
+  # Every Sunday at 03:00 (low usage time)
+  schedule: "0 3 * * 0"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # If backup takes longer than 30 min → abort
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          serviceAccountName: jellyfin-backup-sa
+          # Must run on rpi5 - that's where backup HDD is mounted
+          nodeSelector:
+            kubernetes.io/hostname: rpi5
+          restartPolicy: Never
+
+          initContainers:
+            # Step 1: Scale down Jellyfin gracefully
+            - name: scale-down
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "⏹ Scaling down Jellyfin..."
+                  kubectl scale deployment jellyfin -n jellyfin --replicas=0
+                  echo "⏳ Waiting for pod to terminate..."
+                  kubectl wait --for=delete pod -l app=jellyfin -n jellyfin --timeout=120s || true
+                  echo "✅ Jellyfin stopped"
+
+          containers:
+            - name: backup
+              image: alpine:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+
+                  BACKUP_ROOT="/mnt/backup/jellyfin-backups"
+                  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                  BACKUP_DIR="${BACKUP_ROOT}/${TIMESTAMP}"
+                  KEEP=5
+
+                  echo "📦 Starting Jellyfin backup: ${TIMESTAMP}"
+                  mkdir -p "${BACKUP_DIR}/config" "${BACKUP_DIR}/cache"
+
+                  # Backup Config PVC
+                  echo "📁 Backing up config..."
+                  cp -a /mnt/config/. "${BACKUP_DIR}/config/"
+                  CONFIG_SIZE=$(du -sh "${BACKUP_DIR}/config" | cut -f1)
+                  echo "   Config: ${CONFIG_SIZE}"
+
+                  # Backup Cache PVC
+                  echo "📁 Backing up cache..."
+                  cp -a /mnt/cache/. "${BACKUP_DIR}/cache/"
+                  CACHE_SIZE=$(du -sh "${BACKUP_DIR}/cache" | cut -f1)
+                  echo "   Cache: ${CACHE_SIZE}"
+
+                  # Write metadata
+                  cat > "${BACKUP_DIR}/backup-info.txt" << EOF
+                  Timestamp: ${TIMESTAMP}
+                  Config Size: ${CONFIG_SIZE}
+                  Cache Size: ${CACHE_SIZE}
+                  Jellyfin Version: $(cat /mnt/config/config/system.xml 2>/dev/null | grep -o 'ServerVersion.*' | head -1 || echo "unknown")
+                  EOF
+
+                  echo "✅ Backup complete: ${BACKUP_DIR}"
+
+                  # Rotate: keep only last 5 backups
+                  echo "🔄 Rotating old backups (keeping ${KEEP})..."
+                  ls -1d "${BACKUP_ROOT}"/[0-9]* 2>/dev/null | sort | head -n -${KEEP} | while read OLD; do
+                    echo "   Deleting: ${OLD}"
+                    rm -rf "${OLD}"
+                  done
+
+                  echo ""
+                  echo "📊 Current backups:"
+                  ls -lh "${BACKUP_ROOT}" | grep "^d"
+                  echo ""
+                  echo "💾 Total backup size: $(du -sh ${BACKUP_ROOT} | cut -f1)"
+
+              volumeMounts:
+                - name: config-pvc
+                  mountPath: /mnt/config
+                - name: cache-pvc
+                  mountPath: /mnt/cache
+                - name: backup-hdd
+                  mountPath: /mnt/backup
+
+          # Step 3: Always scale Jellyfin back up (even on failure)
+          # Using a lifecycle hook approach via a separate sidecar would be complex,
+          # so we use a post-backup job instead (see scale-up-job.yaml for manual recovery)
+          # For auto scale-up, we rely on the Job completing and the CronJob triggering
+          # the scale-up via the TTL mechanism below.
+          # NOTE: Scale-up happens via the companion CronJob "jellyfin-backup-scaleup"
+
+          volumes:
+            - name: config-pvc
+              persistentVolumeClaim:
+                claimName: jellyfin-config-nvme
+            - name: cache-pvc
+              persistentVolumeClaim:
+                claimName: jellyfin-cache-nvme
+            - name: backup-hdd
+              hostPath:
+                path: /mnt/media/backup
+                type: Directory
+---
+# Scale-up job that runs after backup completes (5 min after backup starts)
+# This ensures Jellyfin comes back up even if the backup pod fails
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: jellyfin-backup-scaleup
+  namespace: jellyfin
+spec:
+  # 30 min after backup CronJob (backup starts 03:00, scale-up at 03:30)
+  schedule: "30 3 * * 0"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 120
+      template:
+        spec:
+          serviceAccountName: jellyfin-backup-sa
+          restartPolicy: Never
+          containers:
+            - name: scale-up
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "▶️ Scaling Jellyfin back up..."
+                  kubectl scale deployment jellyfin -n jellyfin --replicas=1
+                  echo "⏳ Waiting for Jellyfin to be ready..."
+                  kubectl rollout status deployment/jellyfin -n jellyfin --timeout=300s
+                  echo "✅ Jellyfin is running again"
