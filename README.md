@@ -8,7 +8,6 @@
 |------|-----|---------|-------|
 | rpi5 | 8 GB | NVMe | high-memory (Jellyfin, Monitoring) |
 | rpi4-cm4 | 4 GB | NVMe | monitoring (allgemeine Workloads) |
-| rpi4 | 4 GB | SSD | network-services (Pi-hole, MQTT) |
 
 Alle Nodes laufen als Control Plane + Worker (keine Taints).
 
@@ -26,7 +25,6 @@ Alle Nodes laufen als Control Plane + Worker (keine Taints).
 
 | Service | Version | IP | Port |
 |---------|---------|-----|------|
-| Pi-hole (DNS + Web) | 2025.x | 192.168.1.225 / .220 | 53 / 80 |
 | Home Assistant | 2026.2 | 192.168.1.223 | 8123 |
 | Jellyfin | 10.11.6 | 192.168.1.224 | 8096 |
 | MQTT (Mosquitto) | 2.0 | 192.168.1.222 | 1883 |
@@ -43,7 +41,6 @@ Longhorn v1.10.1 mit 2 Replicas (soft-anti-affinity).
 | StorageClass | Replicas | Einsatz |
 |--------------|----------|---------|
 | longhorn | 2 | Standard |
-| longhorn-fast | 2 | NVMe-optimiert (Pi-hole, Jellyfin) |
 
 15 Volumes, alle healthy.
 
