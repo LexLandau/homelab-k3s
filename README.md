@@ -15,7 +15,7 @@ Alle Nodes laufen als Control Plane + Worker (keine Taints).
 
 | Komponente | Version |
 |------------|---------|
-| K3s | v1.34.4+k3s1 |
+| K3s | v1.35.5+k3s1 |
 | Longhorn | v1.10.1 |
 | MetalLB | v0.15.3 |
 | ArgoCD | v2.13.2 |
