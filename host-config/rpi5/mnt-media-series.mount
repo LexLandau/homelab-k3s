@@ -5,10 +5,10 @@ Before=smbd.service k3s.service
 Requires=local-fs.target
 
 [Mount]
-What=/dev/disk/by-uuid/DC067D4F067D2BA0
+What=/dev/disk/by-uuid/a5001183-de90-43d5-b1dd-50ac742b117e
 Where=/mnt/media/series
-Type=ntfs3
-Options=rw,noatime,uid=1000,gid=1000,nofail
+Type=ext4
+Options=rw,noatime,nofail
 
 [Install]
 WantedBy=multi-user.target
