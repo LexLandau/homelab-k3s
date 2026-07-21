@@ -107,9 +107,10 @@ kubectl get plans,jobs -n system-upgrade
 - **Soll-Replica-Inventur zuerst:** Vor Volume-Diagnosen und manuellen Replica-Deletes `spec.numberOfReplicas` aller Volumes prüfen. Legacy-SC-Volumes (alte `longhorn`-Class) standen auf Soll 3, Standard ist 2.
 - **Engine-ERR-Geister nach Rolling-Restarts:** modeMap-Einträge ohne zugehörige Replica-CR blockieren Rebuilds dauerhaft (10-min-Takt = replica-replenishment-wait-interval). Fix: Workload auf 0 skalieren, Volume detachen lassen, wieder hochskalieren.
 - **iSCSI-I/O-Errors (sdX) sind Folgesymptom:** session recovery timed out plus EXT4-Journal-Abbruch auf einem Longhorn-Device zeigt einen gestorbenen instance-manager an, keinen lokalen Plattendefekt.
-- **Budget-SSD + etcd + parallele Rebuilds = Node-Ausfall:** Fanxiang S101 (ohne DRAM-Cache) liefert unter Parallellast sekundenlange fsync-Stalls (etcd slow fdatasync bis 18 s, k3s-Startloop, Load über 10). concurrent-replica-rebuild-per-node-limit=1 ist Dauerstandard; rpi4 ohne Longhorn-Scheduling bis zum SSD-Tausch.
+- **Budget-SSD + etcd + parallele Rebuilds = Node-Ausfall:** Fanxiang S101 (ohne DRAM-Cache) liefert unter Parallellast sekundenlange fsync-Stalls (etcd slow fdatasync bis 18 s, k3s-Startloop, Load über 10). concurrent-replica-rebuild-per-node-limit=1 ist Dauerstandard; rpi4 dauerhaft ohne Longhorn-Replica-Scheduling (Entscheidung 2026-07-21: vorhandene SSD bleibt).
 - **Longhorn-Settings gehören in die default-setting ConfigMap (Git):** Live-Patches driften und überleben Neustarts und Upgrades nicht zuverlässig.
 - **Reboot-Kommandos als getrennte Blöcke ausführen:** Kommentar-Gates in Copy-Paste-Blöcken verschluckt die Shell; Node-Reboots einzeln, dazwischen Longhorn-Robustness prüfen.
 - **findmnt nimmt genau ein Argument;** Multi-Mount-Checks als Schleife.
+- **rpi4-Sonderkonfiguration:** k3s-Drop-in IOSchedulingClass=realtime (io-priority.conf) bewusst belassen; ohne BFQ-Scheduler wirkungslos, dokumentiert zur Nachvollziehbarkeit.
 
 Last updated: 2026-07-21 | Status: operational
