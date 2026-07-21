@@ -26,7 +26,7 @@ Alle Nodes laufen als Control Plane + Worker (keine Taints).
 
 | Service | Version | IP | Port |
 |---------|---------|-----|------|
-| Home Assistant | 2026.2 | 192.168.1.223 | 8123 |
+| Home Assistant | 2026.4 | 192.168.1.223 | 8123 |
 | Jellyfin | latest (10.11.x) | 192.168.1.224 | 8096 |
 | MQTT (Mosquitto) | 2.0 | 192.168.1.222 | 1883 |
 | Portainer | CE latest | 192.168.1.227 | 9443 |
@@ -43,7 +43,7 @@ Longhorn v1.10.1 mit 2 Replicas (soft-anti-affinity).
 |--------------|----------|---------|
 | longhorn | 2 | Standard |
 
-15 Volumes, alle healthy.
+10 Volumes (Pi-hole-Volumes mit AdGuard-Umzug entfernt).
 
 USB-HDDs auf rpi5 (direkt gemountet, kein Longhorn):
 
@@ -65,7 +65,7 @@ Alle Konfigurationen werden über ArgoCD aus diesem Repository deployed.
 
 | App | Sync | Pfad |
 |-----|------|------|
-| infrastructure | auto + prune | kubernetes/infrastructure |
+| infrastructure | auto, kein prune | kubernetes/infrastructure |
 | core-apps | auto, kein prune | kubernetes/core |
 | home-apps | auto, kein prune | kubernetes/apps |
 | root-app | auto + prune | kubernetes/argocd/applications |
