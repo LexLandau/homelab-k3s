@@ -8,6 +8,7 @@
 |------|-----|---------|-------|
 | rpi5 | 8 GB | NVMe | high-memory (Jellyfin, Monitoring) |
 | rpi4-cm4 | 4 GB | NVMe | monitoring (allgemeine Workloads) |
+| rpi4 | 4 GB | SSD | network-services (allgemeine Workloads) |
 
 Alle Nodes laufen als Control Plane + Worker (keine Taints).
 
@@ -15,7 +16,7 @@ Alle Nodes laufen als Control Plane + Worker (keine Taints).
 
 | Komponente | Version |
 |------------|---------|
-| K3s | v1.35.5+k3s1 |
+| K3s | v1.35.6+k3s1 |
 | Longhorn | v1.10.1 |
 | MetalLB | v0.15.3 |
 | ArgoCD | v2.13.2 |
@@ -26,7 +27,7 @@ Alle Nodes laufen als Control Plane + Worker (keine Taints).
 | Service | Version | IP | Port |
 |---------|---------|-----|------|
 | Home Assistant | 2026.2 | 192.168.1.223 | 8123 |
-| Jellyfin | 10.11.6 | 192.168.1.224 | 8096 |
+| Jellyfin | latest (10.11.x) | 192.168.1.224 | 8096 |
 | MQTT (Mosquitto) | 2.0 | 192.168.1.222 | 1883 |
 | Portainer | CE latest | 192.168.1.227 | 9443 |
 | Grafana | kube-prometheus-stack | 192.168.1.228 | 80 |
@@ -50,7 +51,7 @@ USB-HDDs auf rpi5 (direkt gemountet, kein Longhorn):
 |-------|-------|------------|
 | /mnt/media/backup | 3.6 TB | EXT4 |
 | /mnt/media/movies | 1.8 TB | EXT4 |
-| /mnt/media/series | 1.8 TB | NTFS (Migration pending) |
+| /mnt/media/series | 1.8 TB | EXT4 |
 
 ## Netzwerk
 
@@ -73,7 +74,7 @@ Dependency Updates via Renovate Bot (wöchentlich, kein Automerge).
 
 ## K3s Auto-Upgrade
 
-system-upgrade-controller mit Plan `k3s-server` auf stable-Channel.
+system-upgrade-controller mit Plan `k3s-server` auf gepinnte Version (spec.version, Bump via Git).
 Nodes werden automatisch nacheinander (concurrency: 1) gecordoned und upgraded.
 ```bash
 kubectl get plans,jobs -n system-upgrade
@@ -101,4 +102,4 @@ kubectl get plans,jobs -n system-upgrade
 
 ---
 
-Last updated: 2026-02-17 | Status: operational
+Last updated: 2026-07-21 | Status: operational
