@@ -78,6 +78,8 @@ metadata:
 data:
   default-setting.yaml: |-
     priority-class: "longhorn-critical"
+    storage-minimal-available-percentage: "10"
+    concurrent-replica-rebuild-per-node-limit: "1"
     disable-revision-counter: "{\"v1\":\"true\"}"
 ---
 # Source: longhorn/templates/storageclass.yaml
