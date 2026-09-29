@@ -1,0 +1,9 @@
+# Argo CD Installation (Non-HA), offizielles Manifest in fester Version.
+# Upgrade: Version unten aendern, vorher Upgrade-Hinweise lesen:
+# https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/
+# Anpassungen nur als Kustomize-Patch hier, nie direkt im Cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.3/manifests/install.yaml

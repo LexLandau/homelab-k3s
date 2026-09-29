@@ -1,0 +1,22 @@
+# Argo CD verwaltet sich selbst aus kubernetes/argocd/install.
+# Bewusst OHNE resources-finalizer: Loeschen dieser Application laesst Argo CD bestehen.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/LexLandau/homelab-k3s.git
+    targetRevision: main
+    path: kubernetes/argocd/install
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false      # nie eigene Komponenten loeschen
+      selfHeal: true    # manuelle Aenderungen auf Git-Stand zuruecksetzen
+    syncOptions:
+    - ServerSideApply=true   # Pflicht fuer Selbstverwaltung ab 3.3 (CRD-Groesse)
