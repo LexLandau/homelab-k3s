@@ -1,3 +1,5 @@
+> **Archiv, Stand Januar 2026.** Werte und Volumes sind veraltet; aktueller Stand siehe README.md und docs/.
+
 # Longhorn Storage Optimization
 
 ## Configuration for 3-Node Raspberry Pi Cluster

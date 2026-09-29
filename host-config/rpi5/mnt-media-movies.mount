@@ -1,5 +1,5 @@
 [Unit]
-Description=Movies HDD (NTFS)
+Description=Movies HDD (ext4)
 After=local-fs.target
 Before=smbd.service k3s.service
 Requires=local-fs.target

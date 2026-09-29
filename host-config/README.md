@@ -1,45 +1,34 @@
-# Host Configuration Files
+# Host-Konfiguration
 
-Configuration files applied directly to cluster nodes (not managed by Kubernetes).
+Dateien, die direkt auf den Knoten liegen (nicht über Kubernetes verwaltet). Nach Änderungen per scp/ssh verteilen, danach den Dienst neu starten.
 
-## rpi5 - Media Server Configuration
+## k3s (alle Knoten)
 
-### NTFS Performance Optimization (December 2025)
+Siehe k3s/README.md. Zusatzdatei config.yaml.d/10-disable.yaml deaktiviert traefik und local-storage.
 
-Optimized NTFS USB HDDs from 40 MB/s to 110+ MB/s by switching from `ntfs-3g` (userspace FUSE) to `ntfs3` (kernel driver).
+## rpi5 (Mediendienste)
 
-| Test | Before | After |
-|------|--------|-------|
-| Local read | 40 MB/s | 111 MB/s |
-| SMB write | 40 MB/s | 113-125 MB/s |
-| SMB read (robocopy) | 40 MB/s | 125 MB/s |
+| Datei | Ziel auf rpi5 | Zweck |
+|---|---|---|
+| mnt-media-backup.mount | /etc/systemd/system/ | USB-HDD 3,6 TB, ext4, /mnt/media/backup |
+| mnt-media-movies.mount | /etc/systemd/system/ | USB-HDD 1,8 TB, ext4, /mnt/media/movies |
+| mnt-media-series.mount | /etc/systemd/system/ | USB-HDD 1,8 TB, ext4, /mnt/media/series |
+| smb.conf | /etc/samba/smb.conf | Samba auf eth1 (192.168.1.15, 2,5 GbE) |
+| 99-readahead.rules | /etc/udev/rules.d/ | Read-ahead 2 MB für USB-HDDs |
 
-### Files
+Samba-Freigaben:
 
-- `mnt-media-*.mount` - Systemd mount units with ntfs3 driver
-- `smb.conf` - Optimized Samba configuration for 2.5GbE
-- `99-readahead.rules` - udev rule for increased read-ahead buffer
+| Freigabe | Pfad | Zugriff |
+|---|---|---|
+| Movies, Series | /mnt/media/movies, /mnt/media/series | Gast lesen/schreiben |
+| Backup | /mnt/media/backup | Gast lesen/schreiben (bewusst, nur LAN) |
+| LonghornBackup | /mnt/media/backup/longhorn | nur Benutzer longhorn-backup (Passwort in 1Password) |
 
-### Installation
+Änderung smb.conf übernehmen (Prüfung vor Übernahme):
+
 ```bash
-# Mount units
-sudo cp rpi5/mnt-media-*.mount /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now mnt-media-movies.mount mnt-media-series.mount mnt-media-backup.mount
-
-# Samba
-sudo cp rpi5/smb.conf /etc/samba/smb.conf
-sudo systemctl restart smbd
-
-# udev
-sudo cp rpi5/99-readahead.rules /etc/udev/rules.d/
+scp host-config/rpi5/smb.conf rpi5:/tmp/smb.conf.neu
+ssh -t rpi5 'testparm -s /tmp/smb.conf.neu >/dev/null && sudo install -m 0644 /tmp/smb.conf.neu /etc/samba/smb.conf && sudo systemctl reload smbd; rm -f /tmp/smb.conf.neu'
 ```
 
-### Network
-
-- eth0 (pihole-0.pihole-headless.pihole.svc.cluster.local) - 1GbE onboard - K3s cluster
-- eth1 (192.168.1.15) - 2.5GbE USB adapter - SMB traffic
-
-### Windows Tip
-
-Use `robocopy` for max speed: `robocopy "\\192.168.1.15\Movies" C:\dest /MT:8`
+Hinweis: Die Mount-Units hießen früher „NTFS“; alle Platten sind inzwischen ext4. Die Beschreibung auf dem Host ändert sich erst beim nächsten Kopieren der Units.

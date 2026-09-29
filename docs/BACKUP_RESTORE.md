@@ -2,28 +2,34 @@
 
 Stand: 29.09.2026, Longhorn v1.10.1
 
-## Ueberblick
+## Überblick
 
 | Baustein | Konfiguration | Quelle in Git |
 |---|---|---|
-| Snapshots | taeglich 02:00, 7 behalten | kubernetes/infrastructure/longhorn/recurring-jobs.yaml |
+| Backups | täglich 01:00, 7 behalten, Volumes nacheinander | kubernetes/infrastructure/longhorn/recurring-jobs.yaml |
+| Snapshots | täglich 02:00, 7 behalten | ebenda |
 | Snapshot-Bereinigung | sonntags 04:00 | ebenda |
-| Backups | taeglich 01:00, 7 behalten, Volumes nacheinander | ebenda |
 | Backup-Ziel | cifs://192.168.1.15/LonghornBackup | kubernetes/infrastructure/longhorn/longhorn.yaml (ConfigMap longhorn-default-resource) |
-| Zugangsdaten | Secret cifs-secret im Namespace longhorn-system | NICHT in Git (Repository ist oeffentlich) |
+| Zugangsdaten | Secret cifs-secret (longhorn-system), per ExternalSecret aus 1Password, Eintrag samba-longhorn-backup | kubernetes/infrastructure/longhorn/cifs-externalsecret.yaml |
 | Samba-Freigabe | [LonghornBackup] auf rpi5, nur Benutzer longhorn-backup | host-config/rpi5/smb.conf |
-| Speicherort | USB-Platte am rpi5, /mnt/media/backup/longhorn | host-config/rpi5/mnt-media-backup.mount |
+| Speicherort | USB-HDD am rpi5, /mnt/media/backup/longhorn | host-config/rpi5/mnt-media-backup.mount |
 
-Alle Volumes ohne eigene Job-Zuordnung gehoeren automatisch zur Gruppe default und werden erfasst.
-Zeitzone der Knoten: Europe/Berlin.
+Volumes ohne eigene Job-Zuordnung gehören automatisch zur Gruppe default und werden erfasst. Zeitzone der Knoten: Europe/Berlin.
 
 ## Regeln
 
-- Keine Aufraeumskripte oder Aufbewahrungsregeln direkt auf /mnt/media/backup/longhorn. Longhorn verwaltet den Lebenszyklus der Backups selbst.
-- Snapshots liegen auf denselben Datentraegern wie die Volumes und ersetzen kein Backup.
-- Die Backups liegen am selben Standort. Eine Kopie ausser Haus existiert noch nicht.
+- Keine Aufräumskripte oder Aufbewahrungsregeln direkt auf /mnt/media/backup/longhorn; Longhorn verwaltet die Backups selbst.
+- Snapshots liegen auf denselben Datenträgern wie die Volumes und ersetzen kein Backup.
+- Backups liegen am selben Standort; eine Kopie außer Haus fehlt noch.
 
-## Status pruefen
+## Passwortwechsel Samba-Benutzer
+
+1. Auf rpi5: `sudo smbpasswd longhorn-backup`
+2. Neues Passwort in 1Password (Eintrag samba-longhorn-backup) eintragen.
+3. Sofort abgleichen: `kubectl -n longhorn-system annotate externalsecrets.external-secrets.io cifs-secret force-sync="$(date +%s)" --overwrite`
+4. Nach spätestens 5 Minuten prüfen: BackupTarget `AVAILABLE true`.
+
+## Status prüfen
 
 ```bash
 kubectl -n longhorn-system get backuptargets.longhorn.io
@@ -33,9 +39,9 @@ kubectl -n longhorn-system get backups.longhorn.io -o custom-columns='VOLUME:.st
 
 Erwartung: BackupTarget AVAILABLE true, drei RecurringJobs, je Volume Backups mit STATE Completed.
 
-## Secret neu anlegen (z.B. nach Cluster-Neuaufbau)
+## Notfall: Secret ohne ESO anlegen
 
-Passwort steht im Passwortmanager (Eintrag Samba longhorn-backup).
+Nur wenn der External Secrets Operator nicht verfügbar ist. Passwort aus 1Password (samba-longhorn-backup).
 
 ```bash
 read -r -s -p "Samba-Passwort fuer longhorn-backup: " CIFSPW; echo
@@ -51,8 +57,8 @@ kubectl -n longhorn-system create job --from=cronjob/daily-backup-all backup-man
 
 ## Wiederherstellung A: Test als separates Volume (erprobt)
 
-Erzeugt ein neues Volume aus einem Backup, ohne den laufenden Dienst zu beruehren.
-Variablen oben anpassen: Backup-Name aus `kubectl -n longhorn-system get backups.longhorn.io`, Groesse wie Original-PVC.
+Erzeugt ein neues Volume aus einem Backup, ohne den laufenden Dienst zu berühren.
+Variablen oben anpassen (Beispielwerte vom Test am 29.09.2026): Backup-Name aus `kubectl -n longhorn-system get backups.longhorn.io`, Größe wie Original-PVC.
 
 ```bash
 BACKUP=backup-8b5be75fa7054d87
@@ -109,7 +115,7 @@ kubectl -n default wait --for=condition=Ready pod/restore-test-reader --timeout=
 kubectl -n default exec restore-test-reader -- sh -c 'cd /restore && find . -type f -exec ls -l {} \; | sort -k9'
 ```
 
-Aufraeumen (am selben Tag, sonst wird das Testvolume nachts mitgesichert):
+Aufräumen (am selben Tag, sonst wird das Testvolume nachts mitgesichert):
 
 ```bash
 kubectl -n default delete pod restore-test-reader
@@ -121,23 +127,16 @@ kubectl delete storageclass longhorn-restore-test
 
 Ablauf, vor echtem Einsatz einmal an einem unkritischen Dienst testen:
 
-1. Automatische Synchronisation pausieren, sonst legt ArgoCD (selfHeal) ein geloeschtes PVC sofort leer neu an. Betroffen: root-app und die Application des Dienstes.
+1. Automatische Synchronisation pausieren, sonst legt ArgoCD (selfHeal) ein gelöschtes PVC sofort leer neu an. Betroffen: root-app und die Application des Dienstes.
 2. Workload auf 0 Replikas skalieren.
-3. Longhorn-Oberflaeche oeffnen: `kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80`, dann http://localhost:8080.
-4. Defektes Volume loeschen, Backup mit bisherigem Volume-Namen wiederherstellen, danach PV und PVC mit bisherigem PVC-Namen anlegen.
-5. Workload hochskalieren, Inhalt pruefen.
+3. Longhorn-Oberfläche öffnen: `kubectl -n longhorn-system port-forward svc/longhorn-frontend 8081:80`, dann http://localhost:8081.
+4. Defektes Volume löschen, Backup mit bisherigem Volume-Namen wiederherstellen, danach PV und PVC mit bisherigem PVC-Namen anlegen.
+5. Workload hochskalieren, Inhalt prüfen.
 6. root-app in ArgoCD synchronisieren; damit gilt wieder die Sync-Richtlinie aus Git.
 
 ## Testprotokoll
 
 | Datum | Volume | Backup | Ergebnis |
 |---|---|---|---|
-| 29.09.2026 | mqtt/mosquitto-data (pvc-2ab772d1) | backup-8b5be75fa7054d87 | Erfolgreich, Datei mosquitto.db identisch (Groesse, Zeitstempel, Rechte) |
-
-## Hinweis ab 29.09.2026: Secret ueber External Secrets
-
-Das Secret cifs-secret wird vom External Secrets Operator aus 1Password bereitgestellt
-(Tresor Homelab-K3s-ESO, Eintrag samba-longhorn-backup, Definition in
-kubernetes/infrastructure/longhorn/cifs-externalsecret.yaml).
-Passwortwechsel: zuerst auf dem rpi5 (sudo smbpasswd longhorn-backup), dann in 1Password.
-Der Abschnitt "Secret neu anlegen" gilt nur noch als Notfallweg ohne ESO.
+| 29.09.2026 | mqtt/mosquitto-data (pvc-2ab772d1) | backup-8b5be75fa7054d87 | Wiederherstellung erfolgreich, mosquitto.db identisch (Größe, Zeitstempel, Rechte) |
+| 29.09.2026 | alle 10 Volumes | Job backup-test-eso | Backup erfolgreich mit Zugangsdaten aus 1Password (ESO), inkrementell rund 2 Minuten |

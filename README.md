@@ -1,116 +1,122 @@
 # K3s Homelab Cluster
 
-3-Node Kubernetes Cluster (K3s) auf Raspberry Pi Hardware für Home Services und Homelab.
+3-Knoten-Kubernetes-Cluster (k3s) auf Raspberry Pi. Betrieb vollständig per GitOps: Dieses Repository ist die Quelle der Wahrheit (Single Source of Truth), Argo CD gleicht den Cluster automatisch ab.
+
+Stand: 29.09.2026
 
 ## Hardware
 
-| Node | RAM | Storage | Rolle |
-|------|-----|---------|-------|
-| rpi5 | 8 GB | NVMe | high-memory (Jellyfin, Monitoring) |
-| rpi4-cm4 | 4 GB | NVMe | monitoring (allgemeine Workloads) |
-| rpi4 | 4 GB | SSD | network-services (allgemeine Workloads) |
+| Knoten | IP | RAM | Speicher | Besonderheit |
+|---|---|---|---|---|
+| rpi5 | 192.168.1.10 | 8 GB | NVMe | Zusätzlich eth1 192.168.1.15 (2,5 GbE, SMB), USB-HDDs |
+| rpi4-cm4 | 192.168.1.11 | 4 GB | NVMe | |
+| rpi4 | 192.168.1.12 | 4 GB | SSD | Keine Longhorn-Replikas (Entscheidung 21.07.2026, siehe docs/LESSONS_LEARNED.md) |
 
-Alle Nodes laufen als Control Plane + Worker (keine Taints).
+Alle Knoten sind Control Plane, etcd und Worker zugleich (Embedded etcd, HA). Debian 13, arm64.
 
-## Infrastructure Stack
+## Plattform
 
-| Komponente | Version |
-|------------|---------|
-| K3s | v1.35.6+k3s1 |
-| Longhorn | v1.10.1 |
-| MetalLB | v0.15.3 |
-| ArgoCD | v2.13.2 |
-| system-upgrade-controller | latest |
+| Komponente | Version | Quelle in Git |
+|---|---|---|
+| k3s | v1.35.6+k3s1 | kubernetes/apps/system-upgrade/plan.yaml |
+| Argo CD | v3.5.3 (selbstverwaltet) | kubernetes/argocd/install |
+| Longhorn | v1.10.1 | kubernetes/infrastructure/longhorn |
+| MetalLB | v0.15.3 (L2) | kubernetes/infrastructure/metallb |
+| system-upgrade-controller | v0.18.0 | kubernetes/infrastructure/system-upgrade-controller |
+| External Secrets Operator | Chart 2.11.0 | kubernetes/argocd/applications/external-secrets.yaml |
+| kube-prometheus-stack | Chart 91.8.1 (Prometheus 3.15, Grafana 13.2) | kubernetes/argocd/applications/monitoring-helm.yaml |
 
-## Services
+k3s-Komponenten deaktiviert: servicelb, traefik, local-storage (host-config/k3s).
 
-| Service | Version | IP | Port |
-|---------|---------|-----|------|
-| Home Assistant | 2026.4 | 192.168.1.223 | 8123 |
-| Jellyfin | latest (10.11.x) | 192.168.1.224 | 8096 |
-| MQTT (Mosquitto) | 2.0 | 192.168.1.222 | 1883 |
-| Portainer | CE latest | 192.168.1.227 | 9443 |
-| Grafana | kube-prometheus-stack | 192.168.1.228 | 80 |
-| Uptime Kuma | 2 | 192.168.1.229 | 80 |
-| Terraria | latest | 192.168.1.230 | 7777 |
-| MetalLB Pool | - | 192.168.1.220-239 | - |
+## Dienste
 
-## Storage
+| Dienst | Adresse |
+|---|---|
+| Jellyfin | http://192.168.1.224:8096 |
+| Grafana | http://192.168.1.228 |
+| Uptime Kuma | http://192.168.1.229 (soll durch Alertmanager ersetzt werden) |
+| Argo CD | `kubectl -n argocd port-forward svc/argocd-server 8080:443` |
+| Longhorn | `kubectl -n longhorn-system port-forward svc/longhorn-frontend 8081:80` |
 
-Longhorn v1.10.1 mit 2 Replicas (soft-anti-affinity).
+MetalLB-Pool: 192.168.1.220 bis 192.168.1.239.
 
-| StorageClass | Replicas | Einsatz |
-|--------------|----------|---------|
-| longhorn | 2 | Standard |
+## GitOps-Struktur
 
-10 Volumes (Pi-hole-Volumes mit AdGuard-Umzug entfernt).
+| Application | Pfad | Sync |
+|---|---|---|
+| root-app | kubernetes/argocd/applications | auto, prune |
+| argocd | kubernetes/argocd/install | auto, kein prune, ServerSideApply |
+| infrastructure | kubernetes/infrastructure | auto, kein prune |
+| core-apps | kubernetes/core | auto, kein prune |
+| home-apps | kubernetes/apps | auto, kein prune |
+| external-secrets | Helm-Chart | auto, kein prune, ServerSideApply |
+| kube-prometheus-stack | Helm-Chart | auto, prune, ServerSideApply |
 
-USB-HDDs auf rpi5 (direkt gemountet, kein Longhorn):
+Entfernen einer Anwendung: Manifeste löschen, committen, dann einmalig mit Prune synchronisieren (Apps mit „kein prune“ löschen sonst nichts).
+Entfernte Dienste (Home Assistant, Mosquitto, Terraria, Portainer) sind über den Tag `archiv/vor-entfernung-2026-09-29` wiederherstellbar.
 
-| Mount | Größe | Filesystem |
-|-------|-------|------------|
-| /mnt/media/backup | 3.6 TB | EXT4 |
-| /mnt/media/movies | 1.8 TB | EXT4 |
-| /mnt/media/series | 1.8 TB | EXT4 |
+## Secrets
 
-## Netzwerk
+Keine Secrets in Git (Repository ist öffentlich). Secrets kommen über den External Secrets Operator aus 1Password:
 
-- rpi5 Dual-NIC: eth0 192.168.1.10 (1GbE, K3s) / eth1 192.168.1.15 (2.5GbE, SMB)
-- Flannel über eth0
-- MetalLB L2-Mode
+| Secret | Namespace | 1Password-Eintrag (Tresor Homelab-K3s-ESO) |
+|---|---|---|
+| cifs-secret | longhorn-system | samba-longhorn-backup |
+| grafana-admin | monitoring | grafana-admin |
 
-## GitOps
+Einziges manuell angelegtes Secret: `external-secrets/onepassword-sa-token` (Token des Service Accounts eso-k3s, nur Lesezugriff).
 
-Alle Konfigurationen werden über ArgoCD aus diesem Repository deployed.
+## Speicher und Backup
 
-| App | Sync | Pfad |
-|-----|------|------|
-| infrastructure | auto, kein prune | kubernetes/infrastructure |
-| core-apps | auto, kein prune | kubernetes/core |
-| home-apps | auto, kein prune | kubernetes/apps |
-| root-app | auto + prune | kubernetes/argocd/applications |
+| StorageClass | Replikas | Hinweis |
+|---|---|---|
+| longhorn-fast | 2 | Default |
+| longhorn | 3 | Altbestand, nicht Default |
+| longhorn-2replica, longhorn-static | | Altbestand |
 
-Dependency Updates via Renovate Bot (wöchentlich, kein Automerge).
+| Sicherung | Zeitplan | Ziel |
+|---|---|---|
+| Longhorn-Backup aller Volumes | täglich 01:00, 7 behalten | cifs://192.168.1.15/LonghornBackup (USB-HDD rpi5) |
+| Longhorn-Snapshots | täglich 02:00, 7 behalten | lokal |
+| Snapshot-Bereinigung | sonntags 04:00 | |
+| Jellyfin (rsync) | sonntags 03:00 | /mnt/media/backup/jellyfin-backups |
 
-## K3s Auto-Upgrade
+Wiederherstellung getestet am 29.09.2026. Details: docs/BACKUP_RESTORE.md.
 
-system-upgrade-controller mit Plan `k3s-server` auf gepinnte Version (spec.version, Bump via Git).
-Nodes werden automatisch nacheinander (concurrency: 1) gecordoned und upgraded.
+## Betrieb
+
 ```bash
-kubectl get plans,jobs -n system-upgrade
-```
-
-## Monitoring
-
-Prometheus (20 Gi PVC, 5d Retention) + Grafana + Uptime Kuma.
-```bash
-# Cluster-Status
 kubectl get nodes
-kubectl get pods -A | grep -v Running
-
-# Longhorn Volumes
-kubectl get volumes -n longhorn-system -o custom-columns=NAME:.metadata.name,ROBUSTNESS:.status.robustness
-
-# Upgrade-Status
-kubectl get plans,jobs -n system-upgrade
+kubectl -n argocd get applications.argoproj.io
+kubectl get pods -A | grep -v -E "Running|Completed"
+kubectl -n longhorn-system get volumes.longhorn.io
+kubectl -n longhorn-system get backuptargets.longhorn.io
+kubectl top nodes
 ```
 
-## Backup
+SSH auf die Knoten: `ssh rpi5` usw. (Schlüssel `~/.ssh/homelab_ed25519`, vorher `ssh-add`).
 
-- Longhorn RecurringJob: tägliche Snapshots, 7 Versionen (02:00 Uhr)
-- Jellyfin: wöchentlicher CronJob (Sonntag 03:00), rsync auf Backup-HDD, 5 Versionen
+## Dokumentation
 
----
+| Datei | Inhalt |
+|---|---|
+| docs/PROTOKOLL-2026-09-29.md | Wartung und Modernisierung vom 29.09.2026 |
+| docs/BACKUP_RESTORE.md | Backup, Wiederherstellung, Testprotokoll |
+| docs/MONITORING.md | Zugang, Chart-Update, Kontrolle |
+| docs/LESSONS_LEARNED.md | Erkenntnisse aus Störungen und Umbauten |
+| docs/VLAN_NETWORK.md | Netzsegmentierung (VLAN) |
+| kubernetes/argocd/README.md | Bootstrap und Upgrade Argo CD |
+| kubernetes/infrastructure/longhorn/README.md | Lokale Anpassungen am Longhorn-Manifest |
+| host-config/ | Konfiguration direkt auf den Knoten (k3s, Samba, Mounts) |
+| docs/archiv/ | Veraltete Dokumente (Stand Januar 2026) |
 
-## Lessons Learned (2026-07-21, Update- und Storage-Incident)
+## Offene Punkte
 
-- **Soll-Replica-Inventur zuerst:** Vor Volume-Diagnosen und manuellen Replica-Deletes `spec.numberOfReplicas` aller Volumes prüfen. Legacy-SC-Volumes (alte `longhorn`-Class) standen auf Soll 3, Standard ist 2.
-- **Engine-ERR-Geister nach Rolling-Restarts:** modeMap-Einträge ohne zugehörige Replica-CR blockieren Rebuilds dauerhaft (10-min-Takt = replica-replenishment-wait-interval). Fix: Workload auf 0 skalieren, Volume detachen lassen, wieder hochskalieren.
-- **iSCSI-I/O-Errors (sdX) sind Folgesymptom:** session recovery timed out plus EXT4-Journal-Abbruch auf einem Longhorn-Device zeigt einen gestorbenen instance-manager an, keinen lokalen Plattendefekt.
-- **Budget-SSD + etcd + parallele Rebuilds = Node-Ausfall:** Fanxiang S101 (ohne DRAM-Cache) liefert unter Parallellast sekundenlange fsync-Stalls (etcd slow fdatasync bis 18 s, k3s-Startloop, Load über 10). concurrent-replica-rebuild-per-node-limit=1 ist Dauerstandard; rpi4 dauerhaft ohne Longhorn-Replica-Scheduling (Entscheidung 2026-07-21: vorhandene SSD bleibt).
-- **Longhorn-Settings gehören in die default-setting ConfigMap (Git):** Live-Patches driften und überleben Neustarts und Upgrades nicht zuverlässig.
-- **Reboot-Kommandos als getrennte Blöcke ausführen:** Kommentar-Gates in Copy-Paste-Blöcken verschluckt die Shell; Node-Reboots einzeln, dazwischen Longhorn-Robustness prüfen.
-- **findmnt nimmt genau ein Argument;** Multi-Mount-Checks als Schleife.
-- **rpi4-Sonderkonfiguration:** k3s-Drop-in IOSchedulingClass=realtime (io-priority.conf) bewusst belassen; ohne BFQ-Scheduler wirkungslos, dokumentiert zur Nachvollziehbarkeit.
-
-Last updated: 2026-07-21 | Status: operational
+| Thema | Hinweis |
+|---|---|
+| Alertmanager-Benachrichtigung (Mail) und externes Lebenszeichen | Danach Uptime Kuma entfernen |
+| Ansible an Ist-Stand angleichen | group_vars/hosts veraltet (Versionen, Startparameter, 1Password Connect) |
+| coredns-custom prüfen | Enthält Einträge des entfernten Pi-hole |
+| Backup-Kopie außer Haus | Backups liegen bisher nur am selben Standort |
+| RAM auf rpi4 knapp | Größter Verbraucher: Argo CD Application Controller |
+| SSH-Passwortanmeldung abschalten | Erst nach längerer Nutzung des Schlüssels |

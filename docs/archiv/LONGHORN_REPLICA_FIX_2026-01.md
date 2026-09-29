@@ -1,3 +1,5 @@
+> **Archiv, Stand Januar 2026.** Werte und Volumes sind veraltet; aktueller Stand siehe README.md und docs/.
+
 # Longhorn Replica Node-Redundanz Fix
 
 ## Problem (5. Januar 2026)
