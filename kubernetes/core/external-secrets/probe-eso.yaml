@@ -1,0 +1,21 @@
+# Funktionstest: Eintrag probe-eso aus 1Password als Secret default/probe-eso
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: probe-eso
+  namespace: default
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: onepassword
+  target:
+    name: probe-eso
+    creationPolicy: Owner
+  data:
+  - secretKey: username
+    remoteRef:
+      key: probe-eso/username
+  - secretKey: password
+    remoteRef:
+      key: probe-eso/password
