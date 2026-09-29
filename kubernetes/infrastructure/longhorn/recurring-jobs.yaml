@@ -26,3 +26,18 @@ spec:
   cron: "0 4 * * 0"
   retain: 0
   concurrency: 1
+---
+# Taegliches Backup aller Volumes der Gruppe default auf das Standard-Backup-Ziel (LonghornBackup auf rpi5)
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: daily-backup-all
+  namespace: longhorn-system
+spec:
+  name: daily-backup-all
+  groups:
+  - default
+  task: backup
+  cron: "0 1 * * *"
+  retain: 7
+  concurrency: 1
