@@ -11,3 +11,5 @@ resources:
   - metallb/metallb-native.yaml
   - metallb/ipaddresspool.yaml
   - metallb/l2advertisement.yaml
+  # system-upgrade-controller
+  - system-upgrade-controller

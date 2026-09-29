@@ -1,0 +1,8 @@
+# system-upgrade-controller (Rancher), steuert k3s-Upgrades ueber Plan-Objekte.
+# Version fest auf dem bisher manuell installierten Stand v0.18.0.
+# Der Plan selbst liegt unter kubernetes/apps/system-upgrade/plan.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/rancher/system-upgrade-controller/releases/download/v0.18.0/crd.yaml
+  - https://github.com/rancher/system-upgrade-controller/releases/download/v0.18.0/system-upgrade-controller.yaml
