@@ -1,0 +1,4 @@
+# Cluster-Token aus Datei. Die Datei selbst ist NICHT in Git (nur root lesbar, 0600).
+# Quelle: 1Password, Tresor Homelab-K3s, Eintrag "k3s Server-Token".
+# Ziel auf dem Knoten: /etc/rancher/k3s/config.yaml.d/20-token.yaml
+token-file: /etc/rancher/k3s/cluster-token
