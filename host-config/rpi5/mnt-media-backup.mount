@@ -1,5 +1,5 @@
 [Unit]
-Description=Backup HDD (NTFS)
+Description=Backup HDD (ext4)
 After=local-fs.target
 Before=smbd.service k3s.service
 Requires=local-fs.target
