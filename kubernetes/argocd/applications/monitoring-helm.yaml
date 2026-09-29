@@ -46,7 +46,11 @@ spec:
 
         grafana:
           enabled: true
-          adminPassword: ***REMOVED***
+          # Adminzugang aus Secret grafana-admin (ExternalSecret, Quelle 1Password)
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
           persistence:
             enabled: true
             storageClassName: longhorn
@@ -69,7 +73,7 @@ spec:
               memory: 256Mi
               cpu: 100m
             limits:
-              memory: 512Mi
+              memory: 768Mi
               cpu: 500m
 
         alertmanager:
