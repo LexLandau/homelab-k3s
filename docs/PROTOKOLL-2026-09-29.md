@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Datum | 29.09.2026 |
-| Durchführung | Alex (Sebastian Alexander Philipp) |
+| Durchführung | Alex |
 | System | k3s-Cluster, 3 × Raspberry Pi (rpi5, rpi4-cm4, rpi4) |
 | Grundsatz | Git ist die Quelle der Wahrheit; jede Änderung über Commit und Argo CD |
 
