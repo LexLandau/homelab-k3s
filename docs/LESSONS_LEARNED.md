@@ -13,6 +13,8 @@
 - **Verwaiste Finalizer blockieren das Löschen:** LoadBalancer-Dienste aus der ServiceLB-Zeit trugen `service.kubernetes.io/load-balancer-cleanup`; ohne ServiceLB entfernt ihn niemand, Namespaces bleiben in `Terminating`.
 - **Scheduler verteilt nach Requests, nicht nach Auslastung:** Nach vielen Neustarts landeten ArgoCD, ESO und Monitoring-Komponenten auf dem kleinsten Knoten (rpi4), der kurz `NotReady` wurde. Affinitäten gezielt setzen, ungenutzte Dienste entfernen.
 - **k3s erneuert Zertifikate beim Neustart**, wenn sie innerhalb von 120 Tagen ablaufen. Knoten einzeln neu starten (etcd-Quorum).
+- **Löschen ist kein Widerrufen:** Eine aus Git entfernte Datei bleibt in der Historie eines öffentlichen Repositorys lesbar. Veröffentlichte Geheimnisse gelten als kompromittiert und werden rotiert; Historie bereinigen ist nur Nacharbeit.
+- **Token-Rotation k3s:** Vorher etcd-Snapshot und altes Token sichern (ältere Snapshots brauchen es), Token auf allen Servern einheitlich hinterlegen (token-file), dann `k3s token rotate` und alle Server einzeln neu starten.
 
 ## 21.07.2026: Update- und Storage-Störung
 

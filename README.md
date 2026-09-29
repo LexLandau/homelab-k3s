@@ -119,4 +119,7 @@ SSH auf die Knoten: `ssh rpi5` usw. (Schlüssel `~/.ssh/homelab_ed25519`, vorher
 | coredns-custom prüfen | Enthält Einträge des entfernten Pi-hole |
 | Backup-Kopie außer Haus | Backups liegen bisher nur am selben Standort |
 | RAM auf rpi4 knapp | Größter Verbraucher: Argo CD Application Controller |
+| Git-Historie: private E-Mail-Adresse in Commit-Metadaten | Bereinigen (git filter-repo) oder Repository privat stellen |
+| Samba: Jellyfin-Sicherungen für Gäste lesbar | Freigabe Backup einschränken |
+| Port 6443 nur aus Management-Netz | Mit VLAN-Härtung |
 | SSH-Passwortanmeldung abschalten | Erst nach längerer Nutzung des Schlüssels |

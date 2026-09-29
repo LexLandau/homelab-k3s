@@ -75,6 +75,17 @@ Hinweis RAM: rpi4 trägt jetzt Argo CD und Teile des Monitorings; rpi5 zusätzli
 | rpi4 kurz NotReady, ESO-Webhook Timeout | Speicherdruck durch Pod-Häufung auf rpi4 | ESO auf rpi5, Dex aus, ungenutzte Dienste entfernt |
 | Grafana-Anmeldung nach Umstellung fehlgeschlagen | Grafana nutzt Datenbank-Passwort | Passwort aus Secret per grafana cli gesetzt, auf 25 Zeichen erhöht |
 
+## 6a. Nachtrag: Sicherheitsprüfung des Repositorys
+
+Prüfung aller 192 Commits mit gitleaks und gezielter Textsuche.
+
+| Befund | Maßnahme |
+|---|---|
+| k3s-Cluster-Token von 01.12. bis 19.12.2025 im öffentlichen Repository, noch gültig | Token rotiert (k3s token rotate), alle Server neu gestartet; einheitlich per token-file, Quelle 1Password |
+| Klarname im Protokoll | Entfernt |
+| Private E-Mail-Adresse in Commit-Metadaten, alte Pi-hole- und Grafana-Passwörter in der Historie | Passwörter ungültig (Dienste entfernt bzw. Passwort geändert); E-Mail offen |
+| Samba: Longhorn-Backups für Gäste gesperrt, Jellyfin-Sicherungen für Gäste lesbar | Longhorn in Ordnung; Jellyfin offen |
+
 ## 7. Offene Punkte
 
 Siehe README.md, Abschnitt „Offene Punkte“ (u.a. Alertmanager-Benachrichtigung, Ansible-Angleichung, Backup außer Haus).
