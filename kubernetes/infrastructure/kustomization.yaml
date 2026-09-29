@@ -6,6 +6,7 @@ resources:
   - longhorn/longhorn.yaml
   - longhorn/storageclass-fast.yaml
   - longhorn/recurring-jobs.yaml
+  - longhorn/cifs-externalsecret.yaml
   # MetalLB
   - metallb/metallb-native.yaml
   - metallb/ipaddresspool.yaml

@@ -133,3 +133,11 @@ Ablauf, vor echtem Einsatz einmal an einem unkritischen Dienst testen:
 | Datum | Volume | Backup | Ergebnis |
 |---|---|---|---|
 | 29.09.2026 | mqtt/mosquitto-data (pvc-2ab772d1) | backup-8b5be75fa7054d87 | Erfolgreich, Datei mosquitto.db identisch (Groesse, Zeitstempel, Rechte) |
+
+## Hinweis ab 29.09.2026: Secret ueber External Secrets
+
+Das Secret cifs-secret wird vom External Secrets Operator aus 1Password bereitgestellt
+(Tresor Homelab-K3s-ESO, Eintrag samba-longhorn-backup, Definition in
+kubernetes/infrastructure/longhorn/cifs-externalsecret.yaml).
+Passwortwechsel: zuerst auf dem rpi5 (sudo smbpasswd longhorn-backup), dann in 1Password.
+Der Abschnitt "Secret neu anlegen" gilt nur noch als Notfallweg ohne ESO.
