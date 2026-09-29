@@ -64,6 +64,9 @@ metadata:
     app.kubernetes.io/version: v1.10.1
 data:
   default-resource.yaml: |-
+    "backup-target": "cifs://192.168.1.15/LonghornBackup"
+    "backup-target-credential-secret": "cifs-secret"
+    "backupstore-poll-interval": "300"
 ---
 # Source: longhorn/templates/default-setting.yaml
 apiVersion: v1
