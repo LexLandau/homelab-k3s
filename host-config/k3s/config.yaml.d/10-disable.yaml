@@ -1,0 +1,8 @@
+# Zusatzkonfiguration fuer alle drei k3s-Server (rpi4, rpi4-cm4, rpi5).
+# Ziel auf dem Knoten: /etc/rancher/k3s/config.yaml.d/10-disable.yaml
+# "disable+" haengt an die Liste aus /etc/rancher/k3s/config.yaml an (dort: servicelb).
+# traefik: ungenutzt (Dienste laufen ueber MetalLB-IPs)
+# local-storage: ungenutzt, verursachte zweite Default-StorageClass (local-path)
+disable+:
+  - traefik
+  - local-storage
