@@ -11,3 +11,18 @@ spec:
   cron: "0 2 * * *"
   retain: 7
   concurrency: 2
+---
+# Entfernt zum Loeschen markierte Snapshots und Longhorn-Systemsnapshots (purge)
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: weekly-snapshot-cleanup
+  namespace: longhorn-system
+spec:
+  name: weekly-snapshot-cleanup
+  groups:
+  - default
+  task: snapshot-cleanup
+  cron: "0 4 * * 0"
+  retain: 0
+  concurrency: 1
