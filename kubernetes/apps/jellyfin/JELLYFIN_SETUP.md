@@ -2,7 +2,7 @@
 
 ## Current Configuration (Working!)
 
-**Version:** 10.11.11 (fest im Manifest; Upgrade auf 12.x geplant, siehe Release Notes 12.0)
+**Version:** 12.1.20260915-010956 (Upgrade von 10.11.11 am 01.10.2026)
 **Updated:** February 17, 2026
 **Update Path:** 10.10.3 → 10.10.7 → 10.11.6 (Zwischenschritt auf 10.10.7 ist Pflicht!)
 
