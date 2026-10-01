@@ -30,5 +30,17 @@
   "automerge": false,
   "schedule": [
     "every weekend"
+  ],
+  "packageRules": [
+    {
+      "description": "Jellyfin: Hauptversionen (z.B. 12.x) nur nach Freigabe; Datenbankmigration, Backup noetig",
+      "matchPackageNames": [
+        "jellyfin/jellyfin"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    }
   ]
 }
