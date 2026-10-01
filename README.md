@@ -32,7 +32,7 @@ k3s-Komponenten deaktiviert: servicelb, traefik, local-storage (host-config/k3s)
 
 | Dienst | Adresse |
 |---|---|
-| Jellyfin | http://192.168.1.224:8096 |
+| Jellyfin 12.1 | http://192.168.1.224:8096 |
 | Grafana | http://192.168.1.228 |
 | Uptime Kuma | http://192.168.1.229 (soll durch Alertmanager ersetzt werden) |
 | Argo CD | `kubectl -n argocd port-forward svc/argocd-server 8080:443` |

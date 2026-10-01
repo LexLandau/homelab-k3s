@@ -22,6 +22,8 @@
 - **k3s erneuert Zertifikate beim Neustart**, wenn sie innerhalb von 120 Tagen ablaufen. Knoten einzeln neu starten (etcd-Quorum).
 - **Löschen ist kein Widerrufen:** Eine aus Git entfernte Datei bleibt in der Historie eines öffentlichen Repositorys lesbar. Veröffentlichte Geheimnisse gelten als kompromittiert und werden rotiert; Historie bereinigen ist nur Nacharbeit.
 - **Token-Rotation k3s:** Vorher etcd-Snapshot und altes Token sichern (ältere Snapshots brauchen es), Token auf allen Servern einheitlich hinterlegen (token-file), dann `k3s token rotate` und alle Server einzeln neu starten.
+- **selfHeal und Skalierung durch Jobs schließen sich aus:** Steht `replicas` im Manifest, setzt ArgoCD die Anzahl sofort zurück, wenn ein Job (z.B. Backup) auf 0 skaliert. Das Jellyfin-Backup lief dadurch wochenlang bei laufendem Dienst. Lösung: `replicas` nicht in Git führen.
+- **Hauptversion mit DB-Migration (Jellyfin 12):** Version fest pinnen statt `latest`, Backup bei gestopptem Dienst, `startupProbe` mit großzügiger Zeit, damit die livenessProbe die Migration nicht abbricht.
 
 ## 21.07.2026: Update- und Storage-Störung
 
