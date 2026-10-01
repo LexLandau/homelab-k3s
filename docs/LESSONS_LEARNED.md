@@ -1,5 +1,12 @@
 # Lessons Learned
 
+## 01.10.2026: DNS-Umleitung im IoT-VLAN (OPNsense)
+
+- **Destination NAT in OPNsense 26.7 lädt nur mit „Firewall rule: Pass“ als `rdr pass`:** Bei „Manual“ durchläuft das umgeleitete Paket die Filterregeln mit dem neuen Ziel (Loopback-Adresse der Firewall) und braucht dafür eine eigene Pass-Regel; ohne sie verwirft es der Catch-all-Block.
+- **Klonen übernimmt „Firewall rule“:** Eine geklonte Umleitung funktioniert nur, wenn die Filterregeln das neue Ziel und den neuen Port ebenfalls abdecken. Die NTP-Vorlage lief über eine Pass-Regel zur Firewall selbst, für DNS gab es keine.
+- **Nach jeder NAT-Änderung den geladenen Regelsatz prüfen, nicht die Oberfläche:** `pfctl -sn | grep -n rdr` bzw. `grep -n rdr /tmp/rules.debug`. Ein Suchmuster wie `'rdr pass on'` übersieht Regeln, die ohne `pass` geladen sind.
+- **Vergleichsmaßstab im selben Regelsatz:** Die WAN-Weiterleitungen waren bereits als `rdr pass` geladen; daneben fiel die fehlende `pass`-Markierung der IoT-VLAN-Regeln sofort auf.
+
 ## 29.09.2026: Wartung und Modernisierung
 
 - **Git ist nur Quelle der Wahrheit, wenn alles drin steht:** Drift-Analyse (Cluster gegen ArgoCD-Status) fand manuell installierte Komponenten, Teile außerhalb jedes ArgoCD-Pfads (Longhorn-RecurringJobs wurden nie ausgerollt) und eine k3s-Konfiguration, die nicht zum Ansible-Stand passte.
