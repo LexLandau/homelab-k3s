@@ -1,37 +1,51 @@
 # Lessons Learned
 
-## 01.10.2026: DNS-Umleitung im IoT-VLAN (OPNsense)
+Regeln aus früheren Störungen und Wartungen. Vor Arbeiten an einem Thema den passenden Abschnitt lesen.
+Datum = Herkunft, Details im Protokoll des Tages (z. B. [PROTOKOLL-2026-09-29.md](PROTOKOLL-2026-09-29.md)).
+VLAN-Themen (Virtual LAN) stehen in [VLAN_NETWORK.md](VLAN_NETWORK.md).
 
-- **Destination NAT in OPNsense 26.7 lädt nur mit „Firewall rule: Pass“ als `rdr pass`:** Bei „Manual“ durchläuft das umgeleitete Paket die Filterregeln mit dem neuen Ziel (Loopback-Adresse der Firewall) und braucht dafür eine eigene Pass-Regel; ohne sie verwirft es der Catch-all-Block.
-- **Klonen übernimmt „Firewall rule“:** Eine geklonte Umleitung funktioniert nur, wenn die Filterregeln das neue Ziel und den neuen Port ebenfalls abdecken. Die NTP-Vorlage lief über eine Pass-Regel zur Firewall selbst, für DNS gab es keine.
-- **Nach jeder NAT-Änderung den geladenen Regelsatz prüfen, nicht die Oberfläche:** `pfctl -sn | grep -n rdr` bzw. `grep -n rdr /tmp/rules.debug`. Ein Suchmuster wie `'rdr pass on'` übersieht Regeln, die ohne `pass` geladen sind.
-- **Vergleichsmaßstab im selben Regelsatz:** Die WAN-Weiterleitungen waren bereits als `rdr pass` geladen; daneben fiel die fehlende `pass`-Markierung der IoT-VLAN-Regeln sofort auf.
+## Allgemein
 
-## 29.09.2026: Wartung und Modernisierung
+- **Nodes immer einzeln neu starten**, dazwischen Longhorn prüfen. Sonst verliert etcd (Cluster-Datenbank von k3s) das Quorum (Mehrheit der Server). Gilt für Updates, Zertifikate und Token-Rotation. (21.07. und 29.09.2026)
+- **Jeden Reboot als eigenen Copy-Paste-Block.** Kommentare wie `# erst weiter, wenn ...` stoppen nichts, die Shell führt alles direkt nacheinander aus. (21.07.2026)
+- **Mehrere Mountpoints mit `findmnt` nur per Schleife prüfen.** Zwei Argumente gelten als Source und Target eines einzigen Mounts: keine Ausgabe, Exit-Code 1, keine Fehlermeldung. (21.07.2026)
 
-- **Git ist nur Quelle der Wahrheit, wenn alles drin steht:** Drift-Analyse (Cluster gegen ArgoCD-Status) fand manuell installierte Komponenten, Teile außerhalb jedes ArgoCD-Pfads (Longhorn-RecurringJobs wurden nie ausgerollt) und eine k3s-Konfiguration, die nicht zum Ansible-Stand passte.
-- **Snapshots sind kein Backup:** Ohne Backup-Ziel gab es keine Sicherung außerhalb der Longhorn-Datenträger. Ein Backup gilt erst nach erfolgreicher Test-Wiederherstellung als vorhanden.
-- **Upgrades über mehrere Minor-Versionen stufenweise:** ArgoCD 2.13 nach 3.5 in sieben Stufen, vor jeder Stufe die offiziellen Upgrade-Hinweise gelesen. Vorher `argocd admin export`.
-- **Server-Side Apply für große CRDs:** Client-Side Apply scheitert an der 256-KB-Grenze der Annotation `last-applied-configuration`. ArgoCD-Apps mit großen CRDs brauchen `ServerSideApply=true`.
-- **Manuell ausgelöste Syncs übernehmen nicht automatisch die syncOptions der App:** Sync-Auftrag per `kubectl patch` mit `operation` muss die Optionen selbst mitgeben. Alte Fehlermeldungen bleiben im `operationState` stehen, bis ein neuer Sync läuft.
-- **CRDs vor dem Chart-Update einspielen:** Nutzt eine neue Chart-Version Felder, die die alte CRD nicht kennt, scheitert schon der Vergleich (`field not declared in schema`) und ArgoCD synchronisiert nicht. Lösung: CRDs der Zielversion vorab per `kubectl apply --server-side --force-conflicts`.
-- **Grafana übernimmt das Admin-Passwort nur beim ersten Start:** Danach gilt die Grafana-Datenbank. Passwortwechsel: 1Password, dann `grafana cli admin reset-admin-password`.
-- **Helm-Values von Unter-Charts stehen unter dem Chart-Namen:** `prometheus-node-exporter.resources` statt `nodeExporter.resources`; die falschen Schlüssel wurden seit der Installation stillschweigend ignoriert.
-- **Verwaiste Finalizer blockieren das Löschen:** LoadBalancer-Dienste aus der ServiceLB-Zeit trugen `service.kubernetes.io/load-balancer-cleanup`; ohne ServiceLB entfernt ihn niemand, Namespaces bleiben in `Terminating`.
-- **Scheduler verteilt nach Requests, nicht nach Auslastung:** Nach vielen Neustarts landeten ArgoCD, ESO und Monitoring-Komponenten auf dem kleinsten Knoten (rpi4), der kurz `NotReady` wurde. Affinitäten gezielt setzen, ungenutzte Dienste entfernen.
-- **k3s erneuert Zertifikate beim Neustart**, wenn sie innerhalb von 120 Tagen ablaufen. Knoten einzeln neu starten (etcd-Quorum).
-- **Löschen ist kein Widerrufen:** Eine aus Git entfernte Datei bleibt in der Historie eines öffentlichen Repositorys lesbar. Veröffentlichte Geheimnisse gelten als kompromittiert und werden rotiert; Historie bereinigen ist nur Nacharbeit.
-- **Token-Rotation k3s:** Vorher etcd-Snapshot und altes Token sichern (ältere Snapshots brauchen es), Token auf allen Servern einheitlich hinterlegen (token-file), dann `k3s token rotate` und alle Server einzeln neu starten.
-- **selfHeal und Skalierung durch Jobs schließen sich aus:** Steht `replicas` im Manifest, setzt ArgoCD die Anzahl sofort zurück, wenn ein Job (z.B. Backup) auf 0 skaliert. Das Jellyfin-Backup lief dadurch wochenlang bei laufendem Dienst. Lösung: `replicas` nicht in Git führen.
-- **Hauptversion mit DB-Migration (Jellyfin 12):** Version fest pinnen statt `latest`, Backup bei gestopptem Dienst, `startupProbe` mit großzügiger Zeit, damit die livenessProbe die Migration nicht abbricht.
+## Git und ArgoCD
 
-## 21.07.2026: Update- und Storage-Störung
+- **Alles gehört in Git.** Git ist nur Single Source of Truth (SSOT, einzige maßgebliche Quelle), wenn nichts manuell installiert ist. Die Drift-Analyse fand manuelle Komponenten, nie ausgerollte Longhorn-RecurringJobs und eine k3s-Config abweichend vom Ansible-Stand. (29.09.2026)
+- **Upgrades Minor für Minor.** Vor jeder Stufe die Upgrade Notes lesen, vorher `argocd admin export`. ArgoCD 2.13 auf 3.5 waren sieben Stufen. (29.09.2026)
+- **Große CRDs (Custom Resource Definitions, eigene Kubernetes-Ressourcentypen) mit `ServerSideApply=true`.** Client-Side Apply scheitert an der 256-KB-Grenze der Annotation `last-applied-configuration`. (29.09.2026)
+- **CRDs vor dem Chart-Upgrade einspielen:** `kubectl apply --server-side --force-conflicts` mit den CRDs der Zielversion. Sonst scheitert schon der Diff (`field not declared in schema`) und ArgoCD synct nicht. (29.09.2026)
+- **Bei manuellem Sync per `kubectl patch` die syncOptions selbst mitgeben.** Die Optionen der App werden nicht übernommen. Alte Fehler bleiben im `operationState`, bis ein neuer Sync läuft. (29.09.2026)
+- **`replicas` nicht in Git führen, wenn ein Job die Workload skaliert.** Mit selfHeal setzt ArgoCD die Anzahl sofort zurück. Das Jellyfin-Backup lief so wochenlang bei laufendem Pod. (29.09.2026)
 
-- **Soll-Replika-Inventur zuerst:** Vor Volume-Diagnosen und manuellem Löschen von Replikas `spec.numberOfReplicas` aller Volumes prüfen. Volumes der alten StorageClass `longhorn` standen auf Soll 3, Standard ist 2.
-- **Engine-ERR-Geister nach Rolling-Restarts:** modeMap-Einträge ohne zugehörige Replica-CR blockieren Rebuilds dauerhaft (10-Minuten-Takt = replica-replenishment-wait-interval). Lösung: Workload auf 0 skalieren, Volume abhängen lassen, wieder hochskalieren.
-- **iSCSI-I/O-Fehler (sdX) sind Folgesymptom:** session recovery timed out plus EXT4-Journal-Abbruch auf einem Longhorn-Device zeigt einen abgestürzten instance-manager an, keinen lokalen Plattendefekt.
-- **Budget-SSD + etcd + parallele Rebuilds = Knotenausfall:** Fanxiang S101 (ohne DRAM-Cache) liefert unter Parallellast sekundenlange fsync-Stalls (etcd slow fdatasync bis 18 s, k3s-Startschleife, Last über 10). `concurrent-replica-rebuild-per-node-limit=1` ist Dauerstandard; rpi4 dauerhaft ohne Longhorn-Replika-Scheduling (vorhandene SSD bleibt).
-- **Longhorn-Einstellungen gehören in die ConfigMap longhorn-default-setting (Git):** Live-Patches driften und überleben Neustarts und Upgrades nicht zuverlässig.
-- **Reboot-Befehle als getrennte Blöcke:** Kommentar-Gates in Copy-Paste-Blöcken verschluckt die Shell; Knoten einzeln neu starten, dazwischen Longhorn-Robustness prüfen.
-- **findmnt nimmt genau ein Argument;** Mehrfachprüfungen als Schleife.
-- **rpi4-Sonderkonfiguration:** k3s-Drop-in IOSchedulingClass=realtime (io-priority.conf) bewusst belassen; ohne BFQ-Scheduler wirkungslos, dokumentiert zur Nachvollziehbarkeit.
+## Helm und Monitoring
+
+- **Values von Subcharts unter dem Chart-Namen eintragen:** `prometheus-node-exporter.resources`, nicht `nodeExporter.resources`. Falsche Keys werden stillschweigend ignoriert. (29.09.2026)
+- **Grafana-Admin-Passwort per CLI (Command Line Interface) ändern:** `grafana cli admin reset-admin-password`. Der Wert aus den Values gilt nur beim ersten Start, danach zählt die Grafana-DB (Datenbank). Passwort in 1Password ablegen. (29.09.2026)
+
+## Kubernetes-Cluster
+
+- **Workloads gezielt per Affinity verteilen, ungenutzte entfernen.** Der Scheduler plant nach Requests, nicht nach realer Last. ArgoCD, ESO (External Secrets Operator) und Monitoring landeten auf rpi4 (Raspberry Pi 4), der kurz `NotReady` wurde. (29.09.2026)
+- **Hängt ein Namespace in `Terminating`, Finalizer prüfen.** Alte LoadBalancer-Services aus der ServiceLB-Zeit (in k3s eingebauter LoadBalancer) tragen `service.kubernetes.io/load-balancer-cleanup`, den niemand mehr entfernt. (29.09.2026)
+- **Zertifikate:** k3s erneuert sie beim Neustart, wenn sie innerhalb von 120 Tagen ablaufen. (29.09.2026)
+- **Token-Rotation:** etcd-Snapshot und altes Token sichern (ältere Snapshots brauchen es), Token auf allen Servern gleich per token-file, dann `k3s token rotate`. (29.09.2026)
+- **Major-Upgrade mit DB-Migration:** Image-Tag pinnen statt `latest`, Backup bei gestopptem Pod, `startupProbe` mit großzügigem Timeout, damit die livenessProbe die Migration nicht abbricht. Angewendet bei Jellyfin 12, am 01.10.2026 auf 12.1. (29.09.2026)
+
+## Longhorn und Storage
+
+- **Snapshot ist kein Backup.** Es braucht ein Backup Target außerhalb der Longhorn-Volumes. Ein Backup zählt erst nach erfolgreichem Restore-Test. (29.09.2026)
+- **Vor jeder Volume-Diagnose Desired Replicas prüfen:** `spec.numberOfReplicas` aller Volumes. Die alte StorageClass `longhorn` stand auf 3, Default ist 2. (21.07.2026)
+- **Rebuild hängt im 10-Minuten-Takt (`replica-replenishment-wait-interval`):** Nach Rolling Restarts blockieren modeMap-Einträge mit ERR ohne zugehörige Replica-CR (Custom Resource). Fix: Workload auf 0, Volume detachen lassen, wieder hochskalieren. (21.07.2026)
+- **iSCSI-Fehler (Internet Small Computer System Interface, Block-Storage über das Netz) sind Folgesymptom:** `session recovery timed out` plus EXT4-Journal-Abbruch (EXT4 = Linux-Dateisystem) heißt abgestürzter instance-manager, kein Plattendefekt. (21.07.2026)
+- **Maximal ein Rebuild pro Node:** `concurrent-replica-rebuild-per-node-limit=1` bleibt Standard, rpi4 ohne Replica-Scheduling. Consumer-SSD (Solid State Drive) ohne DRAM-Cache (Zwischenspeicher der SSD) wie die Fanxiang S101 hat unter Parallellast fsync-Stalls (Hänger beim Schreiben auf Platte) bis 18 s, dann fallen etcd und k3s aus. (21.07.2026)
+- **Longhorn-Settings nur über die ConfigMap `longhorn-default-setting` in Git.** Live-Patches driften und überleben Restart und Upgrade nicht zuverlässig. (21.07.2026)
+
+## OPNsense
+
+- **Destination NAT (Network Address Translation, hier: Zieladresse umschreiben) mit „Firewall rule: Pass“ anlegen.** Dann lädt OPNsense 26.7 die Regel als `rdr pass` (Umleitung inklusive Freigabe). Bei „Manual“ braucht das umgeleitete Paket eine eigene Pass-Regel, sonst greift Default Deny. Beim Klonen aufpassen: Die DNS-Umleitung (Domain Name System) war ein Klon der NTP-Regel (Network Time Protocol). Für NTP gab es eine passende Pass-Regel, für DNS nicht. (01.10.2026)
+- **Nach NAT-Änderungen den geladenen Regelsatz prüfen, nicht die GUI (grafische Oberfläche):** `pfctl -sn | grep -n rdr` oder `grep -n rdr /tmp/rules.debug`, ohne `pass` im Suchmuster. Der Vergleich mit funktionierenden Regeln (z. B. WAN-Port-Forwards, WAN = Internetseite) zeigt Unterschiede sofort. (01.10.2026)
+
+## Security
+
+- **Veröffentlichte Secrets sofort rotieren.** Gelöscht ist nicht widerrufen: Die Datei bleibt in der History eines Public Repos lesbar. Ein History-Rewrite ist nur Nacharbeit. (29.09.2026)

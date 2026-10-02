@@ -6,6 +6,8 @@ Dateien, die direkt auf den Knoten liegen (nicht über Kubernetes verwaltet). Na
 
 Siehe k3s/README.md. Zusatzdatei config.yaml.d/10-disable.yaml deaktiviert traefik und local-storage.
 
+- rpi4: k3s-Drop-in `io-priority.conf` (IOSchedulingClass=realtime): ohne BFQ-Scheduler wirkungslos, Entfernen prüfen.
+
 ## rpi5 (Mediendienste)
 
 | Datei | Ziel auf rpi5 | Zweck |
