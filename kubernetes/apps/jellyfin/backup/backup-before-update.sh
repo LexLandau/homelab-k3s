@@ -54,7 +54,7 @@ if [[ "$1" == "--restore" ]]; then
   # We need a temporary pod to access the PVC
   print_step "Starting restore pod..."
   kubectl run jellyfin-restore --rm -it --restart=Never \
-    --image=alpine:latest \
+    --image=alpine:3.24.2 \
     --overrides='{
       "spec": {
         "nodeSelector": {"kubernetes.io/hostname": "rpi5"},
@@ -65,7 +65,7 @@ if [[ "$1" == "--restore" ]]; then
         ],
         "containers": [{
           "name":"restore",
-          "image":"alpine:latest",
+          "image":"alpine:3.24.2",
           "command":["sh","-c","rm -rf /mnt/config/* && cp -a /mnt/backup/jellyfin-backups/'${TIMESTAMP}'/config/. /mnt/config/ && rm -rf /mnt/cache/* && cp -a /mnt/backup/jellyfin-backups/'${TIMESTAMP}'/cache/. /mnt/cache/ && echo DONE"],
           "volumeMounts":[
             {"name":"config","mountPath":"/mnt/config"},
@@ -120,7 +120,7 @@ mkdir -p "${BACKUP_DIR}/config" "${BACKUP_DIR}/cache"
 print_step "Mounting PVCs via temporary pod and copying data..."
 # Use kubectl cp via a temporary pod
 kubectl run jellyfin-backup-tmp --restart=Never \
-  --image=alpine:latest \
+  --image=alpine:3.24.2 \
   --overrides='{
     "spec": {
       "nodeSelector": {"kubernetes.io/hostname": "rpi5"},
@@ -130,7 +130,7 @@ kubectl run jellyfin-backup-tmp --restart=Never \
       ],
       "containers": [{
         "name":"backup",
-        "image":"alpine:latest",
+        "image":"alpine:3.24.2",
         "command":["sleep","3600"],
         "volumeMounts":[
           {"name":"config","mountPath":"/mnt/config"},
