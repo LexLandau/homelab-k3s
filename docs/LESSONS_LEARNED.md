@@ -23,10 +23,14 @@ VLAN-Themen (Virtual LAN) stehen in [VLAN_NETWORK.md](VLAN_NETWORK.md).
 
 - **Values von Subcharts unter dem Chart-Namen eintragen:** `prometheus-node-exporter.resources`, nicht `nodeExporter.resources`. Falsche Keys werden stillschweigend ignoriert. (29.09.2026)
 - **Grafana-Admin-Passwort per CLI (Command Line Interface) ändern:** `grafana cli admin reset-admin-password`. Der Wert aus den Values gilt nur beim ersten Start, danach zählt die Grafana-DB (Datenbank). Passwort in 1Password ablegen. (29.09.2026)
+- **Prometheus-Werte pro Container auswerten, nicht pro Pod summieren:** Jeder Container-Neustart erzeugt eine neue Zeitreihe, sum by (pod) addiert alle Generationen (application-controller ergab so 3.533 MiB statt ca. 610 MiB). Richtig: max by (container) (quantile_over_time(0.95, ...)). (02.10.2026)
 
 ## Kubernetes-Cluster
 
-- **Workloads gezielt per Affinity verteilen, ungenutzte entfernen.** Der Scheduler plant nach Requests, nicht nach realer Last. ArgoCD, ESO (External Secrets Operator) und Monitoring landeten auf rpi4 (Raspberry Pi 4), der kurz `NotReady` wurde. (29.09.2026)
+- **Für jede Workload Requests nach Messung setzen:** RAM-Request = 95. Perzentil (p95) über 7 Tage, RAM-Limit = Spitzenwert plus Puffer, keine CPU-Limits. Der Scheduler plant nach Requests, nicht nach realer Last, und verteilt laufende Pods nie neu. Pods ohne Requests zählen mit 0, volle Nodes wirken dadurch leer. ArgoCD lief so komplett ohne Requests auf rpi4 (Raspberry Pi 4). (29.09. und 02.10.2026)
+- **Eigenverbrauch von k3s mit kube-reserved und system-reserved reservieren:** k3s-server (API-Server, etcd und kubelet in einem Prozess) belegt je Node 1,0 bis 1,4 GiB RSS (tatsächlich belegter RAM), containerd und containerd-shims weitere 0,3 bis 0,5 GiB. Ohne Reservierung zählt der Scheduler diesen RAM als frei. Werte in host-config/k3s/<node>/30-reserved.yaml. (02.10.2026)
+- **k3s setzt keine RAM-Eviction-Schwelle:** evictionHard enthält nur imagefs und nodefs, memory.available fällt dadurch auf 0. Ein eigenes eviction-hard-Flag ersetzt die ganze Liste, also immer alle Werte angeben. (02.10.2026)
+- **Node-Änderungen zuerst auf dem Node mit den wenigsten Longhorn-Volumes testen**, den Node mit den meisten zuletzt. (02.10.2026)
 - **Hängt ein Namespace in `Terminating`, Finalizer prüfen.** Alte LoadBalancer-Services aus der ServiceLB-Zeit (in k3s eingebauter LoadBalancer) tragen `service.kubernetes.io/load-balancer-cleanup`, den niemand mehr entfernt. (29.09.2026)
 - **Zertifikate:** k3s erneuert sie beim Neustart, wenn sie innerhalb von 120 Tagen ablaufen. (29.09.2026)
 - **Token-Rotation:** etcd-Snapshot und altes Token sichern (ältere Snapshots brauchen es), Token auf allen Servern gleich per token-file, dann `k3s token rotate`. (29.09.2026)
@@ -49,3 +53,4 @@ VLAN-Themen (Virtual LAN) stehen in [VLAN_NETWORK.md](VLAN_NETWORK.md).
 ## Security
 
 - **Veröffentlichte Secrets sofort rotieren.** Gelöscht ist nicht widerrufen: Die Datei bleibt in der History eines Public Repos lesbar. Ein History-Rewrite ist nur Nacharbeit. (29.09.2026)
+- **Der Automatisierungszugang arbeitet im Cluster nur lesend:** eigener ServiceAccount, Änderungen nur über Git und ArgoCD, Node-Zugriffe per SSH führt Alex selbst aus. Damit ist Git push auf main der eigentliche Admin-Zugang. Details in kubernetes/infrastructure/ops-readonly/README.md. (02.10.2026)

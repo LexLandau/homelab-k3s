@@ -20,11 +20,17 @@ Altes Token je Knoten in /root/k3s-server-token-alt-2026-09-29; noetig nur zur W
 
 Seit 02.10.2026 per kubelet-arg kube-reserved und system-reserved, Werte nach Messung des Eigenverbrauchs:
 
-| Knoten | kube-reserved | system-reserved |
-|---|---|---|
-| rpi4 | 1536Mi | 256Mi |
-| rpi4-cm4 | 1792Mi | 256Mi |
-| rpi5 | 1536Mi | 256Mi |
+| Knoten | kube-reserved | system-reserved | Allocatable (gemessen 02.10.2026) |
+|---|---|---|---|
+| rpi4 | 1536Mi | 256Mi | 2003Mi |
+| rpi4-cm4 | 1792Mi | 256Mi | 1748Mi |
+| rpi5 | 1536Mi | 256Mi | 6270Mi |
 
-Allocatable = Kapazitaet - kube-reserved - system-reserved - 100Mi (Eviction-Schwelle).
+Allocatable = Kapazitaet - kube-reserved - system-reserved. k3s setzt in evictionHard nur imagefs und nodefs, eine RAM-Schwelle (memory.available) gibt es nicht.
 Kontrolle: `kubectl describe node <KNOTEN> | grep -A 6 Allocatable`
+
+Verteilen: Installation mit "install -m 0600 -o root -g root" (wie 10-disable.yaml und 20-token.yaml). Reihenfolge rpi4-cm4, rpi4, rpi5: zuerst der Node mit den wenigsten Longhorn-Volumes. Die Node-Schritte (scp, ssh, Neustart) führt Alex selbst aus.
+
+Hinweis: Die Kopien auf den Nodes enthalten noch die alte Kommentarzeile, inhaltlich identisch, Abgleich beim nächsten Verteilen.
+
+Offener Punkt: RAM-Eviction-Schwelle nachrüsten. Ein eigenes eviction-hard-Flag ersetzt die ganze Liste, dann immer memory.available, imagefs.available und nodefs.available zusammen setzen.

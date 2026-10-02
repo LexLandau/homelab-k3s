@@ -1,7 +1,7 @@
 # Speicherreservierung fuer Kubernetes und Betriebssystem, nur fuer rpi4.
 # Ziel auf dem Knoten: /etc/rancher/k3s/config.yaml.d/30-reserved.yaml
 # Werte nach Messung des Eigenverbrauchs (k3s, etcd, containerd und System).
-# Allocatable = Kapazitaet - kube-reserved - system-reserved - Eviction-Schwelle (100Mi).
+# Allocatable = Kapazitaet - kube-reserved - system-reserved (k3s setzt keine RAM-Eviction-Schwelle).
 # "kubelet-arg+" haengt an eine eventuell vorhandene Liste an.
 kubelet-arg+:
   - "kube-reserved=memory=1536Mi"
