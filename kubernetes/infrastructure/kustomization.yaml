@@ -13,3 +13,5 @@ resources:
   - metallb/l2advertisement.yaml
   # system-upgrade-controller
   - system-upgrade-controller
+  # Nur-Lese-Zugang ops-readonly
+  - ops-readonly/rbac.yaml
