@@ -20,7 +20,7 @@ Alle Knoten sind Control Plane, etcd und Worker zugleich (Embedded etcd, HA). De
 |---|---|---|
 | k3s | v1.35.9+k3s1 | kubernetes/apps/system-upgrade/plan.yaml |
 | Argo CD | v3.5.3 (selbstverwaltet) | kubernetes/argocd/install |
-| Longhorn | v1.10.1 | kubernetes/infrastructure/longhorn |
+| Longhorn | v1.11.3 | kubernetes/infrastructure/longhorn |
 | MetalLB | v0.15.3 (L2) | kubernetes/infrastructure/metallb |
 | system-upgrade-controller | v0.18.0 | kubernetes/infrastructure/system-upgrade-controller |
 | External Secrets Operator | Chart 2.11.0 | kubernetes/argocd/applications/external-secrets.yaml |
