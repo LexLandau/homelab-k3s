@@ -1,6 +1,6 @@
 # Monitoring (kube-prometheus-stack)
 
-Stand: 29.09.2026. Chart 91.8.1, Prometheus-Operator v0.94.1, Prometheus v3.15.0, Grafana 13.2.2, Alertmanager v0.34.1.
+Stand: 02.10.2026. Chart 91.8.2, Prometheus-Operator v0.94.1, Prometheus v3.15.0, Grafana 13.2.3, Alertmanager v0.34.1.
 Definition: kubernetes/argocd/applications/monitoring-helm.yaml (ArgoCD, ServerSideApply).
 
 ## Zugang
@@ -32,7 +32,7 @@ unset GPW
 3. CRDs der Zielversion vorab einspielen, sonst scheitert der ArgoCD-Vergleich (`field not declared in schema`):
 
 ```bash
-V=91.8.1
+V=91.8.2
 D=/tmp/kps-crds-$V
 rm -rf "$D" && mkdir -p "$D"
 for c in alertmanagerconfigs alertmanagers podmonitors probes prometheusagents prometheuses prometheusrules scrapeconfigs servicemonitors thanosrulers; do

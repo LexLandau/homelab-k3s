@@ -24,7 +24,7 @@ Alle Knoten sind Control Plane, etcd und Worker zugleich (Embedded etcd, HA). De
 | MetalLB | v0.15.3 (L2) | kubernetes/infrastructure/metallb |
 | system-upgrade-controller | v0.18.0 | kubernetes/infrastructure/system-upgrade-controller |
 | External Secrets Operator | Chart 2.11.0 | kubernetes/argocd/applications/external-secrets.yaml |
-| kube-prometheus-stack | Chart 91.8.1 (Prometheus 3.15, Grafana 13.2) | kubernetes/argocd/applications/monitoring-helm.yaml |
+| kube-prometheus-stack | Chart 91.8.2 (Prometheus 3.15, Grafana 13.2) | kubernetes/argocd/applications/monitoring-helm.yaml |
 
 k3s-Komponenten deaktiviert: servicelb, traefik, local-storage (host-config/k3s).
 
