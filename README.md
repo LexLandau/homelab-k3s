@@ -2,7 +2,7 @@
 
 3-Knoten-Kubernetes-Cluster (k3s) auf Raspberry Pi. Betrieb vollständig per GitOps: Dieses Repository ist die Quelle der Wahrheit (Single Source of Truth), Argo CD gleicht den Cluster automatisch ab.
 
-Stand: 29.09.2026
+Stand: 02.10.2026
 
 ## Hardware
 
@@ -106,7 +106,7 @@ SSH auf die Knoten: `ssh rpi5` usw. (Schlüssel `~/.ssh/homelab_ed25519`, vorher
 | docs/LESSONS_LEARNED.md | Erkenntnisse aus Störungen und Umbauten |
 | docs/VLAN_NETWORK.md | Netzsegmentierung (VLAN) |
 | kubernetes/argocd/README.md | Bootstrap und Upgrade Argo CD |
-| kubernetes/infrastructure/longhorn/README.md | Lokale Anpassungen am Longhorn-Manifest |
+| kubernetes/infrastructure/longhorn/README.md | Lokale Anpassungen am Longhorn-Manifest, Upgrade, Verlauf |
 | host-config/ | Konfiguration direkt auf den Knoten (k3s, Samba, Mounts) |
 | docs/archiv/ | Veraltete Dokumente (Stand Januar 2026) |
 
@@ -118,6 +118,7 @@ SSH auf die Knoten: `ssh rpi5` usw. (Schlüssel `~/.ssh/homelab_ed25519`, vorher
 | Ansible an Ist-Stand angleichen | group_vars/hosts veraltet (Versionen, Startparameter, 1Password Connect) |
 | coredns-custom prüfen | Enthält Einträge des entfernten Pi-hole |
 | Backup-Kopie außer Haus | Backups liegen bisher nur am selben Standort |
+| Longhorn auf 1.13 | Stufen 1.12.1 und 1.13.0, vorher alten instance-manager v1.10.1 auf rpi5 abbauen (kubernetes/infrastructure/longhorn/README.md) |
 | RAM auf rpi4 knapp | Größter Verbraucher: Argo CD Application Controller |
 | Git-Historie: private E-Mail-Adresse in Commit-Metadaten | Bereinigen (git filter-repo) oder Repository privat stellen |
 | Samba: Jellyfin-Sicherungen für Gäste lesbar | Freigabe Backup einschränken |
