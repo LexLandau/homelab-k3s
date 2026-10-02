@@ -23,17 +23,15 @@ spec:
 
           initContainers:
             # Step 1: Scale down Jellyfin gracefully
+            # registry.k8s.io/kubectl has no shell (distroless), one kubectl call per container
             - name: scale-down
-              image: bitnami/kubectl:latest
-              command:
-                - /bin/sh
-                - -c
-                - |
-                  echo "⏹ Scaling down Jellyfin..."
-                  kubectl scale deployment jellyfin -n jellyfin --replicas=0
-                  echo "⏳ Waiting for pod to terminate..."
-                  kubectl wait --for=delete pod -l app=jellyfin -n jellyfin --timeout=120s || true
-                  echo "✅ Jellyfin stopped"
+              image: registry.k8s.io/kubectl:v1.35.9
+              args: ["scale", "deployment/jellyfin", "-n", "jellyfin", "--replicas=0"]
+            # Exit 0 if no pod matches. If the pod is still running after 120s the job fails
+            # and no backup is taken (no copy of a running database).
+            - name: wait-stopped
+              image: registry.k8s.io/kubectl:v1.35.9
+              args: ["wait", "--for=delete", "pod", "-l", "app=jellyfin", "-n", "jellyfin", "--timeout=120s"]
 
           containers:
             - name: backup
@@ -134,15 +132,12 @@ spec:
         spec:
           serviceAccountName: jellyfin-backup-sa
           restartPolicy: Never
-          containers:
+          # registry.k8s.io/kubectl has no shell (distroless), one kubectl call per container
+          initContainers:
             - name: scale-up
-              image: bitnami/kubectl:latest
-              command:
-                - /bin/sh
-                - -c
-                - |
-                  echo "▶️ Scaling Jellyfin back up..."
-                  kubectl scale deployment jellyfin -n jellyfin --replicas=1
-                  echo "⏳ Waiting for Jellyfin to be ready..."
-                  kubectl rollout status deployment/jellyfin -n jellyfin --timeout=300s
-                  echo "✅ Jellyfin is running again"
+              image: registry.k8s.io/kubectl:v1.35.9
+              args: ["scale", "deployment/jellyfin", "-n", "jellyfin", "--replicas=1"]
+          containers:
+            - name: wait-ready
+              image: registry.k8s.io/kubectl:v1.35.9
+              args: ["rollout", "status", "deployment/jellyfin", "-n", "jellyfin", "--timeout=300s"]
