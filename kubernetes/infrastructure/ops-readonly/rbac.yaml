@@ -1,0 +1,63 @@
+# Nur-Lese-Zugang für die Automatisierung.
+# Änderungen am Cluster laufen ausschließlich über Git und ArgoCD.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ops-readonly
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ops-readonly
+  namespace: ops-readonly
+---
+# Ergänzt die Standardrolle "view" um Objekte, die dort fehlen. Nur get/list/watch.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ops-readonly-readonly-extra
+rules:
+  # Cluster-weite Objekte (in "view" nicht enthalten)
+  - apiGroups: [""]
+    resources: ["nodes", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "volumeattachments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+  # Messwerte für kubectl top
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+  # CRDs der eingesetzten Operatoren (enthalten nur Verweise auf Secrets, keine Werte)
+  - apiGroups: ["longhorn.io", "argoproj.io", "metallb.io", "monitoring.coreos.com", "external-secrets.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ops-readonly-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: ops-readonly
+    namespace: ops-readonly
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ops-readonly-readonly-extra
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ops-readonly-readonly-extra
+subjects:
+  - kind: ServiceAccount
+    name: ops-readonly
+    namespace: ops-readonly
