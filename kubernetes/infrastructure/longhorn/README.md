@@ -5,6 +5,7 @@ Bei jedem Longhorn-Update (neues longhorn.yaml) müssen diese Änderungen erneut
 | Stelle | Änderung | Grund |
 |---|---|---|
 | ConfigMap longhorn-default-setting | storage-minimal-available-percentage "10", concurrent-replica-rebuild-per-node-limit "1" | Stabilität bei Rebuilds (docs/LESSONS_LEARNED.md, 21.07.2026) |
+| ConfigMap longhorn-default-setting | concurrent-automatic-engine-upgrade-per-node-limit "1" | Volume-Engines nach Longhorn-Upgrade automatisch im laufenden Betrieb aktualisieren, je Node eine gleichzeitig (02.10.2026) |
 | ConfigMap longhorn-default-resource | backup-target cifs://192.168.1.15/LonghornBackup, Secret cifs-secret, Intervall 300 | Backup-Ziel (docs/BACKUP_RESTORE.md) |
 | ConfigMap longhorn-storageclass | is-default-class "false" | Einziger Default ist longhorn-fast (storageclass-fast.yaml) |
 
