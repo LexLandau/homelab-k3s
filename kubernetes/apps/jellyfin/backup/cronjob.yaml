@@ -127,7 +127,7 @@ spec:
   failedJobsHistoryLimit: 2
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 120
+      activeDeadlineSeconds: 420   # rollout status wartet bis 300s, Puffer fuer Image-Pull
       template:
         spec:
           serviceAccountName: jellyfin-backup-sa
