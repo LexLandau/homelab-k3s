@@ -4538,7 +4538,7 @@ spec:
             weight: 1
       containers:
       - name: longhorn-ui
-        image: docker.io/longhornio/longhorn-ui:v1.11.3
+        image: docker.io/longhornio/longhorn-ui:v1.13.0
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: nginx-cache
